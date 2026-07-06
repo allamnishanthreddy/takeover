@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Database, ShieldCheck, Users, Briefcase, FileCheck, Sliders } from 'lucide-react';
 
-export default function MemoryVault({ stats = {}, meetings = [], documents = {}, activities = [], employees = [], onAddEmployee, onEditEmployee }) {
+export default function MemoryVault({ stats = {}, meetings = [], documents = {}, activities = [], employees = [], onAddEmployee, onEditEmployee, onExportEmployees }) {
   const [activeTab, setActiveTab] = useState('directory');
 
   // Derive CRM client list dynamically from state
@@ -22,13 +22,23 @@ export default function MemoryVault({ stats = {}, meetings = [], documents = {},
                 <span className="text-[9px] uppercase tracking-wider font-mono text-zinc-500 block flex items-center gap-1 font-bold">
                   <Briefcase size={10} className="text-brand-purple" /> Employees Directory ({employees.length})
                 </span>
-                <button
-                  type="button"
-                  onClick={onAddEmployee}
-                  className="px-2 py-0.5 rounded bg-brand-purple/10 hover:bg-brand-purple/20 border border-brand-purple/20 text-brand-purple text-[8px] font-mono cursor-pointer transition-all active:scale-95"
-                >
-                  + Add
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={onExportEmployees}
+                    className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-white/5 text-zinc-300 text-[8px] font-mono cursor-pointer transition-all active:scale-95"
+                    title="Export Employee List to CSV (Excel)"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onAddEmployee}
+                    className="px-2 py-0.5 rounded bg-brand-purple/10 hover:bg-brand-purple/20 border border-brand-purple/20 text-brand-purple text-[8px] font-mono cursor-pointer transition-all active:scale-95"
+                  >
+                    + Add
+                  </button>
+                </div>
               </div>
               <div className="space-y-1.5 max-h-[85px] overflow-y-auto no-scrollbar">
                 {employees.map((emp) => (

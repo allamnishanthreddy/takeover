@@ -301,6 +301,13 @@ export function MailModal({ isOpen, onClose, emailData, onSendSuccess }) {
     }, 200);
   };
 
+  const handleGmailCompose = () => {
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
+    onSendSuccess({ to, subject, attachment: emailData?.attachmentName });
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
       <div className="glass-panel w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative overflow-hidden">
@@ -379,20 +386,31 @@ export function MailModal({ isOpen, onClose, emailData, onSendSuccess }) {
             )}
 
             {/* Actions */}
-            <div className="flex justify-end gap-2 border-t border-white/5 pt-4 mt-6">
+            <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-6">
               <button
                 type="button"
-                onClick={onClose}
-                className="px-3 py-2 rounded-lg bg-slate-900 border border-white/5 hover:bg-slate-800 text-zinc-300 cursor-pointer"
+                onClick={handleGmailCompose}
+                className="px-3 py-2 rounded-lg bg-red-950/20 hover:bg-red-950/40 border border-red-500/25 hover:border-red-500/50 text-red-400 font-semibold cursor-pointer transition-all flex items-center gap-1.5 text-xs"
+                title="Compose and send using your Gmail Web account"
               >
-                Cancel
+                <span>Compose in Gmail</span>
               </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-blue text-white shadow-lg cursor-pointer hover:scale-102 active:scale-98 transition-all font-semibold flex items-center gap-1.5"
-              >
-                <Send size={12} /> Send Email
-              </button>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-3 py-2 rounded-lg bg-slate-900 border border-white/5 hover:bg-slate-800 text-zinc-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-blue text-white shadow-lg cursor-pointer hover:scale-102 active:scale-98 transition-all font-semibold flex items-center gap-1.5"
+                >
+                  <Send size={12} /> Send Email
+                </button>
+              </div>
             </div>
           </form>
         )}

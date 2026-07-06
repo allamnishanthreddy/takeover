@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Circle, Loader2, Play } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, Play, Brain } from 'lucide-react';
 
-export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isRunning = false, statusText = "" }) {
+export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isRunning = false, statusText = "", reasoning = null }) {
+  const [showReasoning, setShowReasoning] = useState(true);
   if (steps.length === 0) {
     return (
       <div className="glass-panel p-6 rounded-2xl border border-white/5 h-full flex flex-col items-center justify-center text-center text-zinc-500 min-h-[300px]">
@@ -127,6 +128,39 @@ export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isR
           })}
         </div>
       </div>
+
+      {reasoning && (
+        <div className="mt-6 pt-4 border-t border-white/5 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 font-bold flex items-center gap-1">
+              <Brain size={12} className="text-brand-cyan" />
+              AI Reasoning Console
+            </span>
+            <button
+              onClick={() => setShowReasoning(!showReasoning)}
+              className="text-[9px] font-mono text-brand-cyan hover:text-white bg-slate-900 border border-white/5 px-2 py-0.5 rounded cursor-pointer transition-all active:scale-95"
+            >
+              {showReasoning ? 'Hide Explanation' : 'Why? (AI Reasoning)'}
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {showReasoning && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-slate-950/60 border border-white/5 rounded-xl p-3 text-[10px] leading-relaxed text-zinc-300 font-mono space-y-1 overflow-hidden"
+              >
+                <div className="text-white font-semibold border-b border-white/5 pb-1 flex items-center gap-1 mb-1">
+                  💡 {reasoning.title}
+                </div>
+                <p className="text-zinc-400 whitespace-pre-wrap">{reasoning.rationale}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
     </div>
   );

@@ -234,6 +234,9 @@ export default function App() {
   const [whatsAppData, setWhatsAppData] = useState(null);
   const [showTimeMachine, setShowTimeMachine] = useState(false);
 
+  // AI Cognitive Rationale Explanation State
+  const [workflowReasoning, setWorkflowReasoning] = useState(null);
+
   // Global search input state
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -352,6 +355,22 @@ export default function App() {
     });
     setShowEmployeeModal(false);
     setSelectedEmployee(null);
+  };
+
+  const handleExportEmployeesCSV = () => {
+    let csvContent = "ID,Name,Role,Monthly Stipend,Start Date,Status\n" + 
+      employees.map(emp => `"${emp.id}","${emp.name}","${emp.role}","${emp.stipend}","${emp.startDate}","${emp.status}"`).join("\n");
+      
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `EmployeeList_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    pushNotification("Exported Employee Directory to CSV!", "success");
+    pushActivity("Exported Employee Directory list to CSV", "hr");
   };
 
   // MEETING BOOKING HANDLER
@@ -507,6 +526,10 @@ export default function App() {
         { title: 'Finance Agent computes rate modifications', agent: 'finance', description: 'Applying revised volume pricing metrics...' },
         { title: 'Sales Agent updates active CRM proposal status', agent: 'sales', description: 'Tagging record status as "[REVISED]"...' }
       ];
+      setWorkflowReasoning({
+        title: "Quotation Revision Rationale",
+        rationale: "Retrieved previous Quote QT-2026-904 from database memory.\n\nChecked client preferences and updated line-item counts to 12. Recalculated subtotal using revised volumes, applying a standard 10% discount. Gross value is adjusted to $158,333 with a net offering of $142,500."
+      });
       setWorkflow({
         isRunning: true,
         steps,
@@ -580,6 +603,10 @@ export default function App() {
         { title: 'CEO Agent searches calendar database', agent: 'ceo', description: 'Checking Vanguard huddle details...' },
         { title: 'HR Agent reschedules slots', agent: 'hr', description: 'Moving slot to Tomorrow, 5:00 PM...' }
       ];
+      setWorkflowReasoning({
+        title: "Rescheduling Request Rationale",
+        rationale: "Detected scheduling conflict in database memory for Vanguard Enterprises Sync.\n\nScanned available time slots on Tomorrow calendar agenda. Rescheduled to 5:00 PM next open slot, avoiding the 3:00 PM conflict. Notified CEO and HR agents."
+      });
       setWorkflow({
         isRunning: true,
         steps,
@@ -631,6 +658,10 @@ export default function App() {
         { title: 'Finance Agent runs base licensing calculations', agent: 'finance', description: 'Budgeting 15x Enterprise Licenses ($180,000)...' },
         { title: 'Sales Agent appends separate deal record', agent: 'sales', description: 'Pushing Quote v2 node to CRM pipeline...' }
       ];
+      setWorkflowReasoning({
+        title: "Secondary Proposal Rationale",
+        rationale: "Instructed to create a new quotation version instead of modifying Quote QT-2026-904.\n\nCalculated 15x Enterprise Licenses ($180,000 gross). Applied standard volume discount of 10% ($18,000). Registered new unique invoice reference QT-2026-905 in database CRM."
+      });
       setWorkflow({
         isRunning: true,
         steps,
@@ -696,6 +727,10 @@ export default function App() {
         { title: 'HR Agent drafts agreement for Liam Patel', agent: 'hr', description: 'Generating Frontend Intern spec...' },
         { title: 'Finance Agent checks stipend budget', agent: 'finance', description: 'Approving monthly allowance of $2,500/mo...' }
       ];
+      setWorkflowReasoning({
+        title: "Secondary Recruitment Intake Rationale",
+        rationale: "Instructed to hire a second frontend intern instead of reviewing Alex's contract.\n\nHR Agent drafted contract for Liam Patel. Checked payroll budget limitations ($2,500 stipend approved by Finance). Updated database active employee count to 14."
+      });
       setWorkflow({
         isRunning: true,
         steps,
@@ -753,6 +788,10 @@ export default function App() {
         { title: 'Sales Agent maps secondary meeting node', agent: 'sales', description: 'Creating contact calendar linkage...' },
         { title: 'HR Agent adds calendar booking', agent: 'hr', description: 'Setting slot to Wednesday, 11:00 AM...' }
       ];
+      setWorkflowReasoning({
+        title: "Additional Meeting Scheduler Rationale",
+        rationale: "Instructed to schedule a second sync instead of rescheduling the first one.\n\nHR Agent mapped Wednesday 11:00 AM slot. Created calendar invite link. Logged activity in sales and marketing databases."
+      });
       setWorkflow({
         isRunning: true,
         steps,
@@ -858,8 +897,12 @@ export default function App() {
     setChatHistory((prev) => [...prev, { sender: 'user', text: commandText, timestamp: 'Now' }]);
     pushActivity(`Executing user instruction: "${commandText}"`, 'user');
 
+    // 6. INTENT: Generate invoice
+    if (lowerCmd.includes('invoice') || lowerCmd.includes('bill')) {
+      triggerInvoiceWorkflow(commandText);
+    }
     // 1. INTENT: Quotation for ABC
-    if (lowerCmd.includes('quotation') || lowerCmd.includes('quote')) {
+    else if (lowerCmd.includes('quotation') || lowerCmd.includes('quote')) {
       // Memory check: Have we generated a quote previously?
       // Default initial salesCount is 38. If it's already higher than 38, we have generated one!
       if (stats.salesCount > 38) {
@@ -946,6 +989,91 @@ export default function App() {
     }
   };
 
+  // WORKFLOW 6: GENERATE INVOICE
+  const triggerInvoiceWorkflow = (command) => {
+    const steps = [
+      { title: 'CEO Agent maps billing task', agent: 'ceo', description: 'Querying project deliverables for ABC Pvt Ltd...' },
+      { title: 'Finance Agent runs ledger updates', agent: 'finance', description: 'Generating Invoice INV-2026-090 for $7,452...' },
+      { title: 'Knowledge Agent registers tax records', agent: 'knowledge', description: 'Verifying standard 8.0% sales tax calculations...' }
+    ];
+
+    setWorkflowReasoning({
+      title: "Invoice Generation Rationale",
+      rationale: "Parsed instruction to generate an invoice for ABC Pvt Ltd.\n\nFinance Agent checked active SaaS packages. Compiled INV-2026-090 for $7,452 (includes SaaS license at $4,500 and integration hours at $2,400, plus 8% sales tax). Updated corporate revenue from $1,850,000 to $1,857,452."
+    });
+
+    setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflow({
+      isRunning: true,
+      steps,
+      activeStepIndex: 0,
+      statusText: 'CEO Agent mapping billing details...',
+      command
+    });
+    setActiveAgents(['ceo']);
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      if (currentStep < steps.length) {
+        setWorkflow((prev) => ({
+          ...prev,
+          activeStepIndex: currentStep,
+          statusText: `${steps[currentStep].agent.toUpperCase()} Agent: ${steps[currentStep].description}`
+        }));
+        setActiveAgents([steps[currentStep].agent]);
+      } else {
+        clearInterval(interval);
+
+        setStats((prev) => ({
+          ...prev,
+          revenue: prev.revenue + 7452,
+          salesCount: prev.salesCount + 1,
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+        }));
+        flashStatCard('revenue');
+        flashStatCard('salesCount');
+
+        setDocuments((prev) => ({
+          ...prev,
+          invoice: {
+            company: 'NEXUS AI SYSTEMS INC.',
+            invoiceNo: 'INV-2026-090',
+            client: 'ABC Pvt Ltd',
+            clientAddress: 'Tech Park Hub, Block B, Bangalore',
+            date: 'July 6, 2026',
+            dueDate: 'August 6, 2026',
+            items: [
+              { desc: 'Enterprise SaaS Core License (Tier 3)', qty: 1, rate: 4500, total: 4500 },
+              { desc: 'Custom AI Agent Integration Services', qty: 20, rate: 120, total: 2400 }
+            ],
+            subtotal: 6900,
+            tax: 552,
+            total: 7452
+          }
+        }));
+        setActiveDocKey('invoice');
+
+        pushActivity('Invoice INV-2026-090 compiled for ABC Pvt Ltd ($7,452)', 'finance');
+        pushNotification('Invoice INV-2026-090 created.', 'success');
+
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text: 'Invoice INV-2026-090 generated for ABC Pvt Ltd ($7,452). Checked tax guidelines and pushed changes to database ledger. The Invoice has been loaded in the document preview panel.',
+            timestamp: 'Just now',
+            agent: 'finance'
+          }
+        ]);
+
+        setPresenterHighlightText("✅ Invoice generated! Notice the 'Revenue' metric card flashes to show the updated revenue of $1,857,452. The new invoice is ready for download/email.");
+        setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
+        setActiveAgents([]);
+      }
+    }, 1100);
+  };
+
   // WORKFLOW 1: HIRE FRONTEND INTERN
   const triggerHireInternWorkflow = (command) => {
     const steps = [
@@ -959,6 +1087,10 @@ export default function App() {
 
     setPresenterHighlightText("Executing Intern Hire Flow: Watch the HR and Finance agents light up. On completion, the Active Employees count increments, and a draft Offer Letter opens in the Document Panel!");
     setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflowReasoning({
+      title: "Intern Onboarding Rationale",
+      rationale: "HR Agent queried latest company policies. Finance Agent checked payroll margins ($2,500/mo stipend fits in $30,000 yearly headcount allocations buffer). CEO Agent authorized contract issuing for Alex Rivera."
+    });
     setWorkflow({
       isRunning: true,
       steps,
@@ -1036,6 +1168,10 @@ export default function App() {
 
     setPresenterHighlightText("Executing Sales Report Flow: CEO coordinates CRM details and finance ledgers. On completion, the Total Revenue metrics flash, and the compiled Performance Audit loads in the preview panel.");
     setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflowReasoning({
+      title: "Monthly Audit Rationale",
+      rationale: "Compiled active client accounts and deal counts. Verified infrastructure expenditures and computed July net revenue of $1,850,000. Verified agent utility metrics at 98.4%."
+    });
     setWorkflow({
       isRunning: true,
       steps,
@@ -1113,6 +1249,10 @@ export default function App() {
 
     setPresenterHighlightText("Scheduling meeting: Watch Sales and HR agents reserve room slots. On completion, the meetings calendar below updates and flashes.");
     setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflowReasoning({
+      title: "Calendar Booking Rationale",
+      rationale: `Mapped meeting instructions for Vanguard Sync.\n\nChecked CEO calendar availability. Tomorrow 3:00 PM (or slot '${timeText}') was verified clear of conflicts. Reserved virtual boardroom and dispatched team calendar notifications.`
+    });
     setWorkflow({
       isRunning: true,
       steps,
@@ -1190,6 +1330,10 @@ export default function App() {
 
     setPresenterHighlightText("Compiling quotation: Finance computes package quantities. Watch the Sales card increment and the Quotation tab populate!");
     setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflowReasoning({
+      title: "Quotation Drafting Rationale",
+      rationale: `Mapped client account name to: "${clientName}".\n\nFinance Agent verified licensing parameters. Checked promotional SLA rates and computed package estimates ($135,000 gross). Applied CEO-approved 10% volume discount ($13,500), outputting QT-2026-904 with a net valuation of $121,500.`
+    });
     setWorkflow({
       isRunning: true,
       steps,
@@ -1258,6 +1402,10 @@ export default function App() {
 
     setPresenterHighlightText("Querying company knowledge: Knowledge Agent scans corporate archives and generates a direct answer bubble above the text input.");
     setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflowReasoning({
+      title: "Semantic Indexing Rationale",
+      rationale: "Parsed policy query using NLP keyword mapping.\n\nKnowledge Agent queried local file directories for 'leave_policy.md' and matched Section 4 guidelines. Confirmed 1.5 paid leaves monthly allowance for interns."
+    });
     setWorkflow({
       isRunning: true,
       steps,
@@ -1343,6 +1491,10 @@ export default function App() {
     ];
 
     setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflowReasoning({
+      title: "Custom Command Orchestration Rationale",
+      rationale: `Parsed custom text input: "${command}".\n\nMapped target routing to: ${targetAgent.toUpperCase()} Agent. Triggered standard pipeline sync and compiled results under database task queues.`
+    });
     setWorkflow({
       isRunning: true,
       steps,
@@ -1732,6 +1884,7 @@ export default function App() {
               activeStepIndex={workflow.activeStepIndex}
               isRunning={workflow.isRunning}
               statusText={workflow.statusText}
+              reasoning={workflowReasoning}
             />
             <DocPreviewer
               activeDoc={activeDocKey}
@@ -1769,6 +1922,7 @@ export default function App() {
                 setSelectedEmployee(emp);
                 setShowEmployeeModal(true);
               }}
+              onExportEmployees={handleExportEmployeesCSV}
             />
           </div>
 
