@@ -897,6 +897,147 @@ export default function App() {
     setChatHistory((prev) => [...prev, { sender: 'user', text: commandText, timestamp: 'Now' }]);
     pushActivity(`Executing user instruction: "${commandText}"`, 'user');
 
+    // Context Retrieval Memory Intents
+    if (lowerCmd.includes('show the invoice') || lowerCmd.includes('show invoice') || lowerCmd.includes('retrieve invoice')) {
+      setActiveDocKey('invoice');
+      pushActivity("AI Database: Retrieved invoice INV-2026-090", "finance");
+      pushNotification("Invoice retrieved from database memory.", "info");
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: `I successfully retrieved the active invoice (INV-2026-090) for ABC Pvt Ltd from the database. I have rendered it in the Document Preview panel.`,
+          timestamp: 'Just now',
+          agent: 'finance'
+        }
+      ]);
+      setPresenterHighlightText("✅ Database Retrieval: AI fetched the stored invoice INV-2026-090 from persistent memory.");
+      return;
+    }
+    
+    if (lowerCmd.includes('show the quotation') || lowerCmd.includes('show quotation') || lowerCmd.includes('show quote') || lowerCmd.includes('retrieve quotation')) {
+      setActiveDocKey('quotation');
+      pushActivity("AI Database: Retrieved quotation QT-2026-904", "sales");
+      pushNotification("Quotation retrieved from database memory.", "info");
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          sender: 'ai',
+          text: `I found the active Quotation (Quote #QT-2026-904) for ABC Pvt Ltd in the database records and loaded it onto your workspace.`,
+          timestamp: 'Just now',
+          agent: 'sales'
+        }
+      ]);
+      setPresenterHighlightText("✅ Database Retrieval: AI fetched the stored quotation from persistent memory.");
+      return;
+    }
+
+    if (lowerCmd.includes('email it') || lowerCmd.includes('email invoice') || lowerCmd.includes('send it') || lowerCmd.includes('send by email')) {
+      const activeDoc = activeDocKey;
+      const docData = documents[activeDoc];
+      if (docData) {
+        handleOpenMailModal(activeDoc, docData);
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text: `Opening the Email Dispatch panel for your active document [${activeDoc.replace('_', ' ').toUpperCase()}].`,
+            timestamp: 'Just now',
+            agent: 'ceo'
+          }
+        ]);
+      } else {
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text: `Please select a document first in the workspace preview panel to email it.`,
+            timestamp: 'Just now',
+            agent: 'ceo'
+          }
+        ]);
+      }
+      return;
+    }
+
+    if (lowerCmd.includes('continue onboarding') || lowerCmd.includes('onboarding process for rahul') || lowerCmd.includes('onboard rahul')) {
+      const steps = [
+        { title: 'HR Agent retrieves Rahul\'s candidate file', agent: 'hr', description: 'Loading profile from hiring pipeline archive...' },
+        { title: 'Finance Agent verifies budget authorization', agent: 'finance', description: 'Checking $3,200/mo salary details against SLA caps...' },
+        { title: 'HR Agent drafts intern contract', agent: 'hr', description: 'Generating PDF document in memory database...' }
+      ];
+
+      setWorkflowReasoning({
+        title: "Intern Onboarding Continuance",
+        rationale: "Parsed request to resume onboarding for candidate Rahul.\n\nRetrieved Rahul's interview history. Finance Agent approved the modified $3,200/mo stipend cap. HR Agent compiled contract details and updated the document panel."
+      });
+
+      setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+      setWorkflow({
+        isRunning: true,
+        steps,
+        activeStepIndex: 0,
+        statusText: 'HR Agent loading Rahul\'s record...',
+        command: 'Continue Onboarding'
+      });
+      setActiveAgents(['hr']);
+
+      let currentStep = 0;
+      const interval = setInterval(() => {
+        currentStep++;
+        if (currentStep < steps.length) {
+          setWorkflow((prev) => ({
+            ...prev,
+            activeStepIndex: currentStep,
+            statusText: `${steps[currentStep].agent.toUpperCase()} Agent: ${steps[currentStep].description}`
+          }));
+          setActiveAgents([steps[currentStep].agent]);
+        } else {
+          clearInterval(interval);
+
+          setStats((prev) => ({
+            ...prev,
+            employees: prev.employees + 1,
+            activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+          }));
+          flashStatCard('employees');
+
+          setDocuments((prev) => ({
+            ...prev,
+            offer_letter: {
+              company: 'NEXUS AI SYSTEMS INC.',
+              date: 'July 6, 2026',
+              name: 'Rahul Verma',
+              role: 'Backend Engineering Intern',
+              salary: '$3,200',
+              startDate: 'August 1, 2026',
+              location: 'Remote (SF HQ Core)',
+              expiryDate: 'July 15, 2026'
+            }
+          }));
+          setActiveDocKey('offer_letter');
+
+          pushActivity('Onboarding contract completed for Rahul Verma ($3,200)', 'hr');
+          pushNotification('Offer letter drafted for Rahul Verma.', 'success');
+
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              sender: 'ai',
+              text: 'Resumed onboarding for Rahul Verma successfully! The Backend Intern contract ($3,200/mo) has been generated and loaded in the Document panel. Employee database increased to 13.',
+              timestamp: 'Just now',
+              agent: 'hr'
+            }
+          ]);
+
+          setPresenterHighlightText("✅ Database Resume: Onboarding process for Rahul completed, and his contract loaded in the Document panel.");
+          setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
+          setActiveAgents([]);
+        }
+      }, 1100);
+      return;
+    }
+
     // 6. INTENT: Generate invoice
     if (lowerCmd.includes('invoice') || lowerCmd.includes('bill')) {
       triggerInvoiceWorkflow(commandText);
