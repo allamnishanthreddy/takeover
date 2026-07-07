@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 
 export default function DocPreviewer({ activeDoc, documents = {}, onSelectDoc, onSendEmail, onShareWhatsApp }) {
   const [copied, setCopied] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(null);
 
   const docKeys = [
     { key: 'offer_letter', label: 'Offer Letter', icon: FileText },
@@ -56,77 +57,92 @@ export default function DocPreviewer({ activeDoc, documents = {}, onSelectDoc, o
     const currentDoc = documents[activeDoc];
     if (!currentDoc) return;
 
-    const doc = new jsPDF();
-    doc.setFont("helvetica", "normal");
-    
-    if (activeDoc === 'offer_letter') {
-      doc.setFontSize(18);
-      doc.text(currentDoc.company || "NEXUS AI SYSTEMS INC.", 20, 20);
-      doc.setFontSize(10);
-      doc.text("100 Enterprise Way, Suite 400, SF, CA", 20, 28);
-      doc.text(`Date: ${currentDoc.date}`, 150, 20);
-      doc.line(20, 32, 190, 32);
-      
-      doc.setFontSize(14);
-      doc.text("OFFER LETTER OF EMPLOYMENT", 20, 45);
-      
-      doc.setFontSize(11);
-      doc.text(`Dear ${currentDoc.name || 'Alex Rivera'},`, 20, 60);
-      doc.text(`We are thrilled to offer you the position of ${currentDoc.role || 'Frontend Engineering Intern'} at Nexus AI.`, 20, 70);
-      doc.text(`Compensation stipend is structured at ${currentDoc.salary || '$2,500'} per Month.`, 20, 80);
-      doc.text(`Your scheduled commencement date is: ${currentDoc.startDate || 'August 1, 2026'}.`, 20, 90);
-      doc.text(`Authorized by: Jonathan Stark, CEO`, 20, 120);
-    } else if (activeDoc === 'invoice') {
-      doc.setFontSize(18);
-      doc.text("INVOICE", 20, 20);
-      doc.setFontSize(10);
-      doc.text(currentDoc.company || "NEXUS AI INC.", 20, 28);
-      doc.text(`Invoice: ${currentDoc.invoiceNo}`, 150, 20);
-      doc.text(`Due: ${currentDoc.dueDate}`, 150, 28);
-      doc.line(20, 32, 190, 32);
-      
-      doc.text(`Billed To: ${currentDoc.client}`, 20, 45);
-      doc.text(`Address: ${currentDoc.clientAddress}`, 20, 52);
-      
-      let y = 70;
-      doc.text("Line Items:", 20, 62);
-      (currentDoc.items || []).forEach(item => {
-        doc.text(`${item.desc} (Qty: ${item.qty})`, 20, y);
-        doc.text(`$${item.total}`, 160, y);
-        y += 10;
-      });
-      doc.line(20, y, 190, y);
-      doc.text(`Subtotal: $${currentDoc.subtotal}`, 130, y + 10);
-      doc.text(`Total Due: $${currentDoc.total}`, 130, y + 20);
-    } else if (activeDoc === 'quotation') {
-      doc.setFontSize(18);
-      doc.text("QUOTATION", 20, 20);
-      doc.setFontSize(10);
-      doc.text(currentDoc.company || "NEXUS AI INC.", 20, 28);
-      doc.text(`Quote #: ${currentDoc.quoteNo}`, 150, 20);
-      doc.text(`Validity: 30 days`, 150, 28);
-      doc.line(20, 32, 190, 32);
-      
-      doc.text(`Prepared For: ${currentDoc.client}`, 20, 45);
-      
-      let y = 60;
-      (currentDoc.items || []).forEach(item => {
-        doc.text(`${item.desc} (Qty: ${item.qty})`, 20, y);
-        doc.text(`$${item.total}`, 160, y);
-        y += 10;
-      });
-      doc.line(20, y, 190, y);
-      doc.text(`Gross: $${currentDoc.gross}`, 130, y + 10);
-      doc.text(`Net Total: $${currentDoc.total}`, 130, y + 20);
-    } else {
-      doc.setFontSize(18);
-      doc.text(currentDoc.title || "Nexus OS Document", 20, 20);
-      doc.setFontSize(10);
-      doc.text(`Date compiled: ${currentDoc.date || 'July 6'}`, 20, 30);
-      doc.text(`Category: ${activeDoc}`, 20, 38);
-    }
-    
-    doc.save(`${activeDoc}_${Date.now()}.pdf`);
+    setPdfProgress(10);
+    let currentPct = 10;
+    const interval = setInterval(() => {
+      currentPct += 20;
+      if (currentPct >= 100) {
+        clearInterval(interval);
+        setPdfProgress(100);
+        
+        setTimeout(() => {
+          const doc = new jsPDF();
+          doc.setFont("helvetica", "normal");
+          
+          if (activeDoc === 'offer_letter') {
+            doc.setFontSize(18);
+            doc.text(currentDoc.company || "NEXUS AI SYSTEMS INC.", 20, 20);
+            doc.setFontSize(10);
+            doc.text("100 Enterprise Way, Suite 400, SF, CA", 20, 28);
+            doc.text(`Date: ${currentDoc.date}`, 150, 20);
+            doc.line(20, 32, 190, 32);
+            
+            doc.setFontSize(14);
+            doc.text("OFFER LETTER OF EMPLOYMENT", 20, 45);
+            
+            doc.setFontSize(11);
+            doc.text(`Dear ${currentDoc.name || 'Alex Rivera'},`, 20, 60);
+            doc.text(`We are thrilled to offer you the position of ${currentDoc.role || 'Frontend Engineering Intern'} at Nexus AI.`, 20, 70);
+            doc.text(`Compensation stipend is structured at ${currentDoc.salary || '$2,500'} per Month.`, 20, 80);
+            doc.text(`Your scheduled commencement date is: ${currentDoc.startDate || 'August 1, 2026'}.`, 20, 90);
+            doc.text(`Authorized by: Jonathan Stark, CEO`, 20, 120);
+          } else if (activeDoc === 'invoice') {
+            doc.setFontSize(18);
+            doc.text("INVOICE", 20, 20);
+            doc.setFontSize(10);
+            doc.text(currentDoc.company || "NEXUS AI INC.", 20, 28);
+            doc.text(`Invoice: ${currentDoc.invoiceNo}`, 150, 20);
+            doc.text(`Due: ${currentDoc.dueDate}`, 150, 28);
+            doc.line(20, 32, 190, 32);
+            
+            doc.text(`Billed To: ${currentDoc.client}`, 20, 45);
+            doc.text(`Address: ${currentDoc.clientAddress}`, 20, 52);
+            
+            let y = 70;
+            doc.text("Line Items:", 20, 62);
+            (currentDoc.items || []).forEach(item => {
+              doc.text(`${item.desc} (Qty: ${item.qty})`, 20, y);
+              doc.text(`$${item.total}`, 160, y);
+              y += 10;
+            });
+            doc.line(20, y, 190, y);
+            doc.text(`Subtotal: $${currentDoc.subtotal}`, 130, y + 10);
+            doc.text(`Total Due: $${currentDoc.total}`, 130, y + 20);
+          } else if (activeDoc === 'quotation') {
+            doc.setFontSize(18);
+            doc.text("QUOTATION", 20, 20);
+            doc.setFontSize(10);
+            doc.text(currentDoc.company || "NEXUS AI INC.", 20, 28);
+            doc.text(`Quote #: ${currentDoc.quoteNo}`, 150, 20);
+            doc.text(`Validity: 30 days`, 150, 28);
+            doc.line(20, 32, 190, 32);
+            
+            doc.text(`Prepared For: ${currentDoc.client}`, 20, 45);
+            
+            let y = 60;
+            (currentDoc.items || []).forEach(item => {
+              doc.text(`${item.desc} (Qty: ${item.qty})`, 20, y);
+              doc.text(`$${item.total}`, 160, y);
+              y += 10;
+            });
+            doc.line(20, y, 190, y);
+            doc.text(`Gross: $${currentDoc.gross}`, 130, y + 10);
+            doc.text(`Net Total: $${currentDoc.total}`, 130, y + 20);
+          } else {
+            doc.setFontSize(18);
+            doc.text(currentDoc.title || "Nexus OS Document", 20, 20);
+            doc.setFontSize(10);
+            doc.text(`Date compiled: ${currentDoc.date || 'July 6'}`, 20, 30);
+            doc.text(`Category: ${activeDoc}`, 20, 38);
+          }
+          
+          doc.save(`${activeDoc}_${Date.now()}.pdf`);
+          setPdfProgress(null);
+        }, 500);
+      } else {
+        setPdfProgress(currentPct);
+      }
+    }, 150);
   };
 
   const currentDoc = documents[activeDoc];
@@ -448,7 +464,19 @@ export default function DocPreviewer({ activeDoc, documents = {}, onSelectDoc, o
   };
 
   return (
-    <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-full min-h-[500px]">
+    <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col h-full min-h-[500px] relative overflow-hidden">
+      {/* PDF Generation Loader Overlay */}
+      {pdfProgress !== null && (
+        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 text-center rounded-2xl p-4">
+          <div className="w-10 h-10 border-2 border-brand-cyan border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-xs font-semibold text-white font-mono">
+            {pdfProgress === 100 ? '✓ PDF Generated' : `Generating PDF... ${pdfProgress}%`}
+          </p>
+          <div className="w-48 h-1.5 bg-slate-900 border border-white/5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-brand-cyan h-full transition-all duration-200" style={{ width: `${pdfProgress}%` }} />
+          </div>
+        </div>
+      )}
       {/* Top section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/5 pb-4 mb-4">
         <div>

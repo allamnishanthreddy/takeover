@@ -92,3 +92,132 @@ body {
   background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 24px 24px;
 }
+
+/* Light theme overrides (⭐ 16. Dark / Light Theme) */
+.light-theme {
+  background-color: #f8fafc;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: #0f172a;
+}
+
+.light-theme .glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+}
+
+.light-theme .glass-panel-glow-cyan {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.1);
+}
+
+.light-theme .glass-panel-glow-purple {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  box-shadow: 0 10px 30px -10px rgba(168, 85, 247, 0.1);
+}
+
+/* Set lower specificity defaults using :where so Tailwind utility classes override them */
+.light-theme :where(text, h1, h2, h3, h4, h5, h6, strong, b) {
+  color: #0f172a;
+}
+
+.light-theme :where(p, span, label) {
+  color: #334155;
+}
+
+/* Allow text utility classes to work properly in light mode */
+.light-theme .text-zinc-300, 
+.light-theme .text-zinc-400, 
+.light-theme .text-zinc-500,
+.light-theme .text-slate-400,
+.light-theme .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Background overrides for all shades of slate elements, keeping text color override-free */
+.light-theme .bg-slate-900, 
+.light-theme .bg-slate-950,
+.light-theme [class*="bg-slate-900/"],
+.light-theme [class*="bg-slate-950/"] {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Modal and header overrides should be lighter/white backdrop-blur */
+.light-theme .bg-slate-950\/40, 
+.light-theme .bg-slate-950\/80,
+.light-theme .bg-slate-900\/95 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Ensure backdrop overlays for modals remain dark */
+.light-theme .fixed.bg-slate-950\/80 {
+  background-color: rgba(3, 7, 18, 0.7) !important;
+}
+
+.light-theme input, 
+.light-theme textarea, 
+.light-theme select {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+}
+
+.light-theme .border-white\/5, 
+.light-theme .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Premium Button and Interactions styling (🖱️ 8. Button Hover) */
+button, input, textarea {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.15);
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+/* Custom logo spin */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* Flying Envelope keyframes (📬 10. Email Sending) */
+@keyframes fly-away {
+  0% {
+    transform: translate(-60px, 30px) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(0, 0) scale(1) rotate(-10deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(80px, -40px) scale(0.8) rotate(-20deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(160px, -80px) scale(0.4) rotate(-35deg);
+    opacity: 0;
+  }
+}
+.animate-envelope-fly {
+  animation: fly-away 1.5s infinite ease-in-out;
+}

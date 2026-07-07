@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Trash2,
   Moon,
+  Sun,
   Info,
   Presentation,
   Play,
@@ -33,8 +34,9 @@ import DocPreviewer from './components/DocPreviewer';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import CalendarScheduler from './components/CalendarScheduler';
 import MemoryVault from './components/MemoryVault';
-import { EmployeeModal, MeetingModal, MailModal, WhatsAppModal } from './components/ActionModals';
+import { EmployeeModal, MeetingModal, MailModal, WhatsAppModal, StatsDetailModal } from './components/ActionModals';
 import TimeMachine from './components/TimeMachine';
+import confetti from 'canvas-confetti';
 
 // Default Document Template Payloads
 const DEFAULT_DOCUMENTS = {
@@ -173,9 +175,14 @@ export default function App() {
     return saved ? JSON.parse(saved) : [
       {
         sender: 'ai',
-        text: 'Greetings. I am Nexus Core, your corporate AI operations console. I coordinate CEO, HR, Finance, Sales, and Knowledge agents autonomously. Enter an instruction below to execute business workflows.',
-        timestamp: '10:00',
-        agent: 'ceo'
+        text: "Good Evening, Nishanth 👋\n\nToday's Business Summary\n\n• Revenue: ₹1,82,500 (+12%)\n• 3 invoices are overdue\n• 2 employees are on leave\n• One client meeting at 4 PM\n• Inventory of Product X is low\n\nRecommended Actions:",
+        timestamp: '18:00',
+        agent: 'ceo',
+        choices: [
+          { label: '✓ Send payment reminders', value: 'Send payment reminders' },
+          { label: '✓ Restock Product X', value: 'Restock Product X' },
+          { label: '✓ Generate July Report', value: 'Generate July Sales Report' }
+        ]
       }
     ];
   });
@@ -232,13 +239,40 @@ export default function App() {
   const [mailData, setMailData] = useState(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsAppData, setWhatsAppData] = useState(null);
+  const [statsModalType, setStatsModalType] = useState(null);
   const [showTimeMachine, setShowTimeMachine] = useState(false);
 
   // AI Cognitive Rationale Explanation State
   const [workflowReasoning, setWorkflowReasoning] = useState(null);
 
+  const [toasts, setToasts] = useState([]);
+  const [lastAction, setLastAction] = useState(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem('nexus_theme') || 'dark');
+  const [showFloatingAssistant, setShowFloatingAssistant] = useState(false);
+  const [isBootLoading, setIsBootLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsBootLoading(false);
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Global search input state
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchIsLoading, setSearchIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setSearchIsLoading(false);
+      return;
+    }
+    setSearchIsLoading(true);
+    const timer = setTimeout(() => {
+      setSearchIsLoading(false);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Chained operations queue state
   const [postWorkflowChain, setPostWorkflowChain] = useState(null);
@@ -276,6 +310,22 @@ export default function App() {
     localStorage.setItem('nexus_activities', JSON.stringify(activities));
   }, [activities]);
 
+  // Keyboard Shortcut Ctrl+K / Cmd+K listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const commandInput = document.querySelector('input[placeholder*="Type instructions"]');
+        if (commandInput) {
+          commandInput.focus();
+          pushNotification("AI Command Center focused (Ctrl + K)", "info");
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Centralized Chained Workflow Event Trigger
   useEffect(() => {
     if (!workflow.isRunning && postWorkflowChain) {
@@ -307,10 +357,63 @@ export default function App() {
   };
 
   // Helper to add notification toast + list item
-  const pushNotification = (text, type = 'info') => {
+  const pushNotification = (text, type = 'info', isUndoable = false) => {
     const id = Date.now();
     const newNotif = { id, text, type, time: 'Just now' };
     setNotifications((prev) => [newNotif, ...prev]);
+
+    // Push into temporary floating toasts queue
+    setToasts((prev) => [...prev, { id, text, type, isUndoable }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+
+  const handleUndo = () => {
+    if (!lastAction) return;
+
+    if (lastAction.type === 'ADD_EMPLOYEE') {
+      const emp = lastAction.employee;
+      setEmployees((prev) => {
+        const updated = prev.filter((e) => e.id !== emp.id);
+        setStats((s) => ({ ...s, employees: updated.length }));
+        return updated;
+      });
+      pushActivity(`[UNDO] Reverted adding employee: ${emp.name}`, 'hr');
+      pushNotification(`Undo completed: Removed ${emp.name}`, 'info');
+    }
+    else if (lastAction.type === 'DELETE_EMPLOYEE') {
+      const emp = lastAction.employee;
+      setEmployees((prev) => {
+        const updated = [...prev, emp];
+        setStats((s) => ({ ...s, employees: updated.length }));
+        return updated;
+      });
+      pushActivity(`[UNDO] Restored deleted employee: ${emp.name}`, 'hr');
+      pushNotification(`Undo completed: Restored ${emp.name}`, 'success');
+    }
+    else if (lastAction.type === 'ADD_MEETING') {
+      const meeting = lastAction.meeting;
+      setMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+      setStats((prev) => ({ ...prev, meetingsToday: Math.max(0, prev.meetingsToday - 1) }));
+      pushActivity(`[UNDO] Cancelled scheduled meeting: ${meeting.title}`, 'sales');
+      pushNotification(`Undo completed: Cancelled ${meeting.title}`, 'info');
+    }
+    else if (lastAction.type === 'ADD_INVOICE') {
+      setDocuments((prev) => ({
+        ...prev,
+        invoice: DEFAULT_DOCUMENTS.invoice
+      }));
+      setStats((prev) => ({
+        ...prev,
+        revenue: prev.revenue - lastAction.revenueAdded,
+        salesCount: Math.max(0, prev.salesCount - 1)
+      }));
+      pushActivity(`[UNDO] Reverted invoice generation for ABC Pvt Ltd`, 'finance');
+      pushNotification(`Undo completed: Reverted INV-2026-090`, 'info');
+    }
+
+    setLastAction(null);
   };
 
   // Helper to prepend to activity log
@@ -321,8 +424,11 @@ export default function App() {
 
   // EMPLOYEE CRUD ACTION HANDLERS
   const handleSaveEmployee = (emp) => {
+    const exists = employees.some((e) => e.id === emp.id);
+    if (!exists) {
+      setLastAction({ type: 'ADD_EMPLOYEE', employee: emp });
+    }
     setEmployees((prev) => {
-      const exists = prev.some((e) => e.id === emp.id);
       let updated;
       if (exists) {
         updated = prev.map((e) => e.id === emp.id ? emp : e);
@@ -331,7 +437,8 @@ export default function App() {
       } else {
         updated = [...prev, emp];
         pushActivity(`New employee onboarded: ${emp.name}`, 'hr');
-        pushNotification(`Registered profile for ${emp.name}`, 'success');
+        pushNotification(`Registered profile for ${emp.name}`, 'success', true);
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       }
       setStats((s) => ({ ...s, employees: updated.length }));
       flashStatCard('employees');
@@ -342,12 +449,15 @@ export default function App() {
   };
 
   const handleDeleteEmployee = (empId) => {
+    const target = employees.find((e) => e.id === empId);
+    if (target) {
+      setLastAction({ type: 'DELETE_EMPLOYEE', employee: target });
+    }
     setEmployees((prev) => {
-      const target = prev.find((e) => e.id === empId);
       const updated = prev.filter((e) => e.id !== empId);
       if (target) {
         pushActivity(`Employee profile deleted: ${target.name}`, 'hr');
-        pushNotification(`Deleted profile for ${target.name}`, 'info');
+        pushNotification(`Deleted profile for ${target.name}`, 'info', true);
       }
       setStats((s) => ({ ...s, employees: updated.length }));
       flashStatCard('employees');
@@ -375,11 +485,13 @@ export default function App() {
 
   // MEETING BOOKING HANDLER
   const handleSaveMeeting = (meeting) => {
+    setLastAction({ type: 'ADD_MEETING', meeting });
     setMeetings((prev) => [meeting, ...prev]);
     setStats((prev) => ({ ...prev, meetingsToday: prev.meetingsToday + 1 }));
     flashStatCard('meetingsToday');
     pushActivity(`Meeting booked: ${meeting.title} (${meeting.time})`, 'sales');
-    pushNotification(`Meeting scheduled: ${meeting.title}`, 'success');
+    pushNotification(`Meeting scheduled: ${meeting.title}`, 'success', true);
+    confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
     setShowMeetingModal(false);
   };
 
@@ -898,6 +1010,16 @@ export default function App() {
     pushActivity(`Executing user instruction: "${commandText}"`, 'user');
 
     // Context Retrieval Memory Intents
+    if (lowerCmd.includes('payment reminder') || lowerCmd.includes('send payment reminders')) {
+      triggerPaymentRemindersWorkflow(commandText);
+      return;
+    }
+
+    if (lowerCmd.includes('restock') || lowerCmd.includes('product x')) {
+      triggerRestockProductWorkflow(commandText);
+      return;
+    }
+
     if (lowerCmd.includes('show the invoice') || lowerCmd.includes('show invoice') || lowerCmd.includes('retrieve invoice')) {
       setActiveDocKey('invoice');
       pushActivity("AI Database: Retrieved invoice INV-2026-090", "finance");
@@ -1130,6 +1252,138 @@ export default function App() {
     }
   };
 
+  // WORKFLOW 7: SEND PAYMENT REMINDERS
+  const triggerPaymentRemindersWorkflow = (command) => {
+    const steps = [
+      { title: 'CEO Agent scans overdue ledgers', agent: 'ceo', description: 'Checking database registry for invoices older than 30 days...' },
+      { title: 'Sales Agent links client emails', agent: 'sales', description: 'Fetching email addresses for XYZ Ltd and ACME Corp...' },
+      { title: 'Finance Agent drafts dunning notices', agent: 'finance', description: 'Compiling payment reminders for overdue balances...' }
+    ];
+
+    setWorkflowReasoning({
+      title: "Payment Reminders Rationale",
+      rationale: "Detected 3 overdue invoice transactions in database records.\n\nSales Agent matched contact emails. Finance Agent drafted custom dunning templates with a 5% late penalty warning, and scheduled automated email dispatches."
+    });
+
+    setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflow({
+      isRunning: true,
+      steps,
+      activeStepIndex: 0,
+      statusText: 'CEO Agent auditing invoices...',
+      command
+    });
+    setActiveAgents(['ceo']);
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      if (currentStep < steps.length) {
+        setWorkflow((prev) => ({
+          ...prev,
+          activeStepIndex: currentStep,
+          statusText: `${steps[currentStep].agent.toUpperCase()} Agent: ${steps[currentStep].description}`
+        }));
+        setActiveAgents([steps[currentStep].agent]);
+      } else {
+        clearInterval(interval);
+
+        setStats((prev) => ({
+          ...prev,
+          pendingTasks: prev.pendingTasks + 3,
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+        }));
+        flashStatCard('pendingTasks');
+
+        setMailData({
+          to: 'billing@xyzcorp.com, accounts@acmecorp.com',
+          subject: 'URGENT: Overdue Payment Notice - Nexus AI Systems',
+          body: 'Dear Client,\n\nOur database indicates 3 of your invoices are currently overdue. Please reconcile outstanding balances immediately to avoid service suspension.\n\nRegards,\nNexus Finance Team',
+          attachmentName: 'Overdue_Ledger_Audit.pdf'
+        });
+        setShowMailModal(true);
+
+        pushActivity('Dispatched payment reminders for 3 overdue invoices', 'finance');
+        pushNotification('Overdue reminders compiled and queued.', 'success');
+
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text: 'Overdue payment reminders generated! Compiled ledger lists and opened the Email dispatcher modal with prefilled dunning notice text. Pushed 3 pending tasks to stats.',
+            timestamp: 'Just now',
+            agent: 'finance'
+          }
+        ]);
+
+        setPresenterHighlightText("✅ Proactive Action: Payment reminders generated and queued. The Mail modal has been pre-filled with recipient lists.");
+        setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
+        setActiveAgents([]);
+      }
+    }, 1100);
+  };
+
+  // WORKFLOW 8: RESTOCK PRODUCT X
+  const triggerRestockProductWorkflow = (command) => {
+    const steps = [
+      { title: 'Sales Agent checks low stock threshold', agent: 'sales', description: 'Verifying active inventory counts of Product X...' },
+      { title: 'CEO Agent authorizes supplier PO', agent: 'ceo', description: 'Structuring purchase authorization order...' },
+      { title: 'Finance Agent processes supply budget', agent: 'finance', description: 'Allocating $8,200 from corporate reserve margins...' }
+    ];
+
+    setWorkflowReasoning({
+      title: "Inventory Restocking Rationale",
+      rationale: "Product X inventory level dipped below standard 10-unit buffer.\n\nFinance Agent verified budget safety margins. Allocated $8,200 for a 100-unit bulk purchase order. Forwarded signed request to logistics coordinator."
+    });
+
+    setStats((prev) => ({ ...prev, activeWorkflows: prev.activeWorkflows + 1 }));
+    setWorkflow({
+      isRunning: true,
+      steps,
+      activeStepIndex: 0,
+      statusText: 'Sales Agent auditing stock totals...',
+      command
+    });
+    setActiveAgents(['sales']);
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      if (currentStep < steps.length) {
+        setWorkflow((prev) => ({
+          ...prev,
+          activeStepIndex: currentStep,
+          statusText: `${steps[currentStep].agent.toUpperCase()} Agent: ${steps[currentStep].description}`
+        }));
+        setActiveAgents([steps[currentStep].agent]);
+      } else {
+        clearInterval(interval);
+
+        setStats((prev) => ({
+          ...prev,
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+        }));
+
+        pushActivity('Inventory restock purchase order signed: 100x Product X ($8,200)', 'finance');
+        pushNotification('Inventory restock order dispatched.', 'success');
+
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            sender: 'ai',
+            text: 'Purchase order signed and dispatched to supplier for 100x Product X ($8,200 allocated). Inventory buffer restored.',
+            timestamp: 'Just now',
+            agent: 'finance'
+          }
+        ]);
+
+        setPresenterHighlightText("✅ Proactive Action: Restock order completed successfully. Finance agent allocated procurement margins.");
+        setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
+        setActiveAgents([]);
+      }
+    }, 1100);
+  };
+
   // WORKFLOW 6: GENERATE INVOICE
   const triggerInvoiceWorkflow = (command) => {
     const steps = [
@@ -1195,8 +1449,9 @@ export default function App() {
         }));
         setActiveDocKey('invoice');
 
+        setLastAction({ type: 'ADD_INVOICE', invoice: documents.invoice, revenueAdded: 7452 });
         pushActivity('Invoice INV-2026-090 compiled for ABC Pvt Ltd ($7,452)', 'finance');
-        pushNotification('Invoice INV-2026-090 created.', 'success');
+        pushNotification('Invoice INV-2026-090 created.', 'success', true);
 
         setChatHistory((prev) => [
           ...prev,
@@ -1700,7 +1955,45 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 dot-grid font-sans relative overflow-hidden pb-12">
+    <div className={theme === 'light' ? 'light-theme min-h-screen text-slate-950 bg-slate-50 relative overflow-hidden pb-12 transition-colors duration-300' : 'min-h-screen bg-slate-950 text-slate-100 dot-grid font-sans relative overflow-hidden pb-12 transition-colors duration-300'}>
+      {/* Boot Animation & Skeleton Loader overlay */}
+      <AnimatePresence>
+        {isBootLoading && (
+          <motion.div
+            key="loader"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-[9999] p-4 text-center font-sans"
+          >
+            <div className="relative mb-6 flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-tr from-brand-purple to-brand-blue shadow-2xl shadow-brand-purple/40 animate-bounce animate-duration-1000">
+              <Sparkles size={40} className="text-white animate-spin" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-brand-cyan/50 animate-ping opacity-75" />
+            </div>
+            
+            <h2 className="text-xl font-bold tracking-widest text-white uppercase font-mono text-glow-purple">
+              NEXUS AI SYSTEMS
+            </h2>
+            <p className="text-xs text-zinc-400 font-mono tracking-widest mt-2 uppercase">
+              Initializing Autonomous Operations Core
+            </p>
+            
+            {/* Dashboard Skeleton Preview Loader */}
+            <div className="w-80 mt-10 space-y-3 opacity-60">
+              <div className="h-4 bg-slate-900 rounded animate-pulse w-full animate-duration-1000" />
+              <div className="h-3 bg-slate-900 rounded animate-pulse w-5/6 animate-duration-1000" />
+              <div className="h-3 bg-slate-900 rounded animate-pulse w-4/6 animate-duration-1000" />
+              
+              <div className="grid grid-cols-3 gap-2 pt-4">
+                <div className="h-10 bg-slate-900 rounded animate-pulse animate-duration-1000" />
+                <div className="h-10 bg-slate-900 rounded animate-pulse animate-duration-1000" />
+                <div className="h-10 bg-slate-900 rounded animate-pulse animate-duration-1000" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Background Blurs */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[350px] bg-gradient-to-br from-brand-blue/15 to-brand-purple/15 rounded-full blur-3xl -z-10" />
       <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-gradient-to-tr from-brand-purple/10 to-pink-500/10 rounded-full blur-3xl -z-10" />
@@ -1736,7 +2029,16 @@ export default function App() {
                   <span>SEARCH RESULTS</span>
                   <button onClick={() => setSearchQuery("")} className="hover:text-white cursor-pointer font-sans">Clear</button>
                 </div>
-                {renderSearchResults()}
+                {searchIsLoading ? (
+                  <div className="text-center py-6 text-zinc-500 font-mono text-[10px] flex items-center justify-center gap-1.5 animate-pulse">
+                    <span>Searching...</span>
+                    <span className="flex gap-0.5">
+                      <span className="w-1 bg-brand-cyan rounded-full h-1 animate-bounce" />
+                      <span className="w-1 bg-brand-cyan rounded-full h-1 animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1 bg-brand-cyan rounded-full h-1 animate-bounce [animation-delay:0.4s]" />
+                    </span>
+                  </div>
+                ) : renderSearchResults()}
               </div>
             )}
           </div>
@@ -1772,6 +2074,20 @@ export default function App() {
               title="Flush sandbox database cache and reload"
             >
               Reset OS Memory
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => {
+                const nextTheme = theme === 'dark' ? 'light' : 'dark';
+                setTheme(nextTheme);
+                localStorage.setItem('nexus_theme', nextTheme);
+                pushNotification(`Switched to ${nextTheme === 'dark' ? 'Dark' : 'Light'} Mode`, 'info');
+              }}
+              className="p-1.5 rounded-xl bg-slate-900 border border-white/5 hover:bg-slate-800 text-zinc-300 hover:text-white cursor-pointer transition-all flex items-center justify-center w-7.5 h-7.5"
+              title="Toggle Light / Dark Theme"
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
 
             {/* Notification badge */}
@@ -1840,18 +2156,19 @@ export default function App() {
         <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           
           {/* Card 1: Revenue */}
-          <div
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-700 relative overflow-hidden flex flex-col justify-between ${
+          <button
+            onClick={() => setStatsModalType('revenue')}
+            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
               flashingStats.revenue
                 ? 'border-brand-cyan bg-brand-cyan/10 shadow-[0_0_25px_rgba(6,182,212,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/10'
+                : 'border-white/5 hover:border-white/20'
             }`}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start w-full">
               <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Total Revenue</span>
               <div className="p-1.5 rounded-lg bg-brand-cyan/15 text-brand-cyan"><DollarSign size={14} /></div>
             </div>
-            <div className="mt-3">
+            <div className="mt-3 w-full">
               <motion.h2
                 key={stats.revenue}
                 initial={{ scale: 0.95, opacity: 0.8 }}
@@ -1865,21 +2182,22 @@ export default function App() {
                 <span>YoY Growth</span>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Card 2: Employees */}
-          <div
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-700 relative overflow-hidden flex flex-col justify-between ${
+          <button
+            onClick={() => setStatsModalType('employees')}
+            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
               flashingStats.employees
                 ? 'border-brand-purple bg-brand-purple/10 shadow-[0_0_25px_rgba(168,85,247,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/10'
+                : 'border-white/5 hover:border-white/20'
             }`}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start w-full">
               <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Active Employees</span>
               <div className="p-1.5 rounded-lg bg-brand-purple/15 text-brand-purple"><Users size={14} /></div>
             </div>
-            <div className="mt-3">
+            <div className="mt-3 w-full">
               <motion.h2
                 key={stats.employees}
                 initial={{ scale: 0.9, opacity: 0.8 }}
@@ -1892,21 +2210,22 @@ export default function App() {
                 <span>1 pending onboarding</span>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Card 3: Sales Deals */}
-          <div
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-700 relative overflow-hidden flex flex-col justify-between ${
+          <button
+            onClick={() => setStatsModalType('sales')}
+            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
               flashingStats.salesCount
                 ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_25px_rgba(245,158,11,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/10'
+                : 'border-white/5 hover:border-white/20'
             }`}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start w-full">
               <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Sales count</span>
               <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-500"><TrendingUp size={14} /></div>
             </div>
-            <div className="mt-3">
+            <div className="mt-3 w-full">
               <motion.h2
                 key={stats.salesCount}
                 initial={{ scale: 0.9, opacity: 0.8 }}
@@ -1919,21 +2238,22 @@ export default function App() {
                 <span>+12% this month</span>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Card 4: Pending Tasks */}
-          <div
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-700 relative overflow-hidden flex flex-col justify-between ${
+          <button
+            onClick={() => setStatsModalType('tasks')}
+            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
               flashingStats.pendingTasks
                 ? 'border-pink-500 bg-pink-500/10 shadow-[0_0_25px_rgba(236,72,153,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/10'
+                : 'border-white/5 hover:border-white/20'
             }`}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start w-full">
               <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Pending Tasks</span>
               <div className="p-1.5 rounded-lg bg-pink-500/15 text-pink-500"><Activity size={14} /></div>
             </div>
-            <div className="mt-3">
+            <div className="mt-3 w-full">
               <motion.h2
                 key={stats.pendingTasks}
                 initial={{ scale: 0.9, opacity: 0.8 }}
@@ -1946,21 +2266,22 @@ export default function App() {
                 <span>AI queue priority high</span>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Card 5: Meetings Today */}
-          <div
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-700 relative overflow-hidden flex flex-col justify-between ${
+          <button
+            onClick={() => setStatsModalType('meetings')}
+            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
               flashingStats.meetingsToday
                 ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_25px_rgba(59,130,246,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/10'
+                : 'border-white/5 hover:border-white/20'
             }`}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start w-full">
               <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Meetings Today</span>
               <div className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400"><CalendarIcon size={14} /></div>
             </div>
-            <div className="mt-3">
+            <div className="mt-3 w-full">
               <motion.h2
                 key={stats.meetingsToday}
                 initial={{ scale: 0.9, opacity: 0.8 }}
@@ -1973,15 +2294,18 @@ export default function App() {
                 <span>All Zoom bridges active</span>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Card 6: Workflow success */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/5 relative overflow-hidden flex flex-col justify-between">
-            <div className="flex justify-between items-start">
+          <button
+            onClick={() => setStatsModalType('workflows')}
+            className="glass-panel p-4 rounded-2xl border border-white/5 hover:border-white/20 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full"
+          >
+            <div className="flex justify-between items-start w-full">
               <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Workflow Success</span>
               <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400"><CheckCircle2 size={14} /></div>
             </div>
-            <div className="mt-3">
+            <div className="mt-3 w-full">
               <h2 className="text-xl font-bold font-mono text-white m-0">
                 {stats.successRate}%
               </h2>
@@ -1989,7 +2313,7 @@ export default function App() {
                 <span>Autonomous status OK</span>
               </div>
             </div>
-          </div>
+          </button>
 
         </section>
 
@@ -2250,6 +2574,132 @@ export default function App() {
         documents={documents}
         onReopenItem={handleReopenItem}
       />
+
+      <StatsDetailModal
+        isOpen={statsModalType !== null}
+        onClose={() => setStatsModalType(null)}
+        type={statsModalType}
+        stats={stats}
+        employees={employees}
+        meetings={meetings}
+        documents={documents}
+        activities={activities}
+      />
+
+      {/* Toast Notification Container */}
+      <div className="fixed top-6 right-6 z-[9999] space-y-2 pointer-events-none">
+        <AnimatePresence>
+          {toasts.map((t) => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, x: 50, y: -20 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              className="pointer-events-auto w-80 bg-slate-900/95 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-2xl flex gap-3 relative overflow-hidden"
+            >
+              {/* Visual glow indicator line */}
+              <div className={`absolute left-0 top-0 bottom-0 w-1 ${t.type === 'success' ? 'bg-emerald-500' : t.type === 'info' ? 'bg-brand-cyan' : 'bg-brand-purple'}`} />
+              
+              <div className="flex-1">
+                <p className="text-xs text-slate-100 font-semibold">{t.text}</p>
+                
+                {t.isUndoable && lastAction && (
+                  <button
+                    onClick={() => {
+                      handleUndo();
+                      setToasts((prev) => prev.filter((toast) => toast.id !== t.id));
+                    }}
+                    className="mt-2 text-[10px] font-bold text-brand-cyan hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    ↩ Undo Last Action
+                  </button>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
+                className="text-zinc-500 hover:text-white cursor-pointer text-xs"
+              >
+                ✕
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Floating AI Assistant Widget */}
+      <div className="fixed bottom-6 right-6 z-[999]">
+        <AnimatePresence>
+          {showFloatingAssistant && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="glass-panel w-80 h-96 rounded-2xl border border-white/10 shadow-2xl p-4 flex flex-col justify-between mb-4 relative overflow-hidden text-xs bg-slate-900/95 backdrop-blur-xl"
+            >
+              <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-brand-cyan animate-ping" />
+                  <span className="font-mono text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Nexus Companion</span>
+                </div>
+                <button
+                  onClick={() => setShowFloatingAssistant(false)}
+                  className="text-zinc-500 hover:text-white cursor-pointer font-sans"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Chat list area */}
+              <div className="flex-1 overflow-y-auto my-3 no-scrollbar space-y-3 pr-1">
+                {chatHistory.map((chat, idx) => (
+                  <div key={idx} className={`flex gap-2 ${chat.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`p-2 rounded-xl text-[11px] leading-relaxed max-w-[85%] ${chat.sender === 'user' ? 'bg-brand-purple/20 border border-brand-purple/20 text-slate-100 rounded-tr-none' : 'bg-slate-950/65 border border-white/5 text-slate-300 rounded-tl-none'}`}>
+                      {chat.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Input for companion chat */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const val = e.target.elements.companionInput.value.trim();
+                  if (!val || workflow.isRunning) return;
+                  handleExecuteCommand(val);
+                  e.target.elements.companionInput.value = '';
+                }}
+                className="flex items-center gap-2 mt-auto"
+              >
+                <input
+                  name="companionInput"
+                  disabled={workflow.isRunning}
+                  type="text"
+                  placeholder="Ask Nexus..."
+                  className="w-full bg-slate-950 border border-white/10 focus:border-brand-cyan focus:outline-none p-2 rounded-lg text-slate-100 placeholder-zinc-500 font-mono text-[11px]"
+                />
+                <button
+                  type="submit"
+                  disabled={workflow.isRunning}
+                  className="p-2 rounded-lg bg-gradient-to-r from-brand-purple to-brand-blue text-white shadow-lg cursor-pointer flex items-center justify-center"
+                >
+                  <Send size={12} />
+                </button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Toggle bubble button */}
+        <button
+          onClick={() => setShowFloatingAssistant(!showFloatingAssistant)}
+          className="p-3.5 rounded-full bg-gradient-to-r from-brand-purple to-brand-blue text-white shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer z-50 flex items-center justify-center"
+          title="Open AI Companion"
+        >
+          <Sparkles size={20} className="animate-pulse" />
+        </button>
+      </div>
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto px-4 mt-12 text-center text-[11px] font-mono text-zinc-600 space-y-1">
