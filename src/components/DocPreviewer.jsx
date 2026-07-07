@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Copy, Check, FileSpreadsheet, Calendar, TrendingUp } from 'lucide-react';
+import { FileText, Download, Copy, Check, FileSpreadsheet, Calendar, TrendingUp, Sparkles } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
 export default function DocPreviewer({ activeDoc, documents = {}, onSelectDoc, onSendEmail, onShareWhatsApp }) {
@@ -150,9 +150,62 @@ export default function DocPreviewer({ activeDoc, documents = {}, onSelectDoc, o
   // Custom renders for different document types to make them look hyper-premium
   const renderDocumentContent = () => {
     if (!currentDoc) {
+      const getEmptyStateDetails = () => {
+        switch (activeDoc) {
+          case 'offer_letter':
+            return {
+              title: 'No Offer Letter Created Yet',
+              description: 'Register an employee profile or speak to HR Agent to compile contract drafts.',
+              prompt: 'Hire a frontend intern'
+            };
+          case 'invoice':
+            return {
+              title: 'No Invoices Generated Yet',
+              description: 'Instruct the Finance Agent to compile billing details and update ledger statistics.',
+              prompt: 'Create quotation for ABC Pvt Ltd'
+            };
+          case 'quotation':
+            return {
+              title: 'No Quotations Compiled Yet',
+              description: 'Trigger the Sales Agent to draft quote licensing documents for active CRM leads.',
+              prompt: 'Create quotation for ABC Pvt Ltd'
+            };
+          case 'meeting_minutes':
+            return {
+              title: 'No Meeting Minutes Synchronized',
+              description: 'Schedule client briefs or sync operational parameters to index session files.',
+              prompt: 'Schedule client meeting tomorrow at 3 PM'
+            };
+          case 'monthly_report':
+            return {
+              title: 'No Performance Reports Run',
+              description: 'Coordinate data pipelines between CEO and Finance databases to compile report structures.',
+              prompt: 'Generate July Sales Report'
+            };
+          default:
+            return {
+              title: 'Awaiting Document Orchestration',
+              description: 'Select an active demo flow or prompt the AI Command Center.',
+              prompt: ''
+            };
+        }
+      };
+
+      const details = getEmptyStateDetails();
+
       return (
-        <div className="flex flex-col items-center justify-center h-72 text-zinc-500 font-mono text-xs">
-          <span>Awaiting document orchestration...</span>
+        <div className="flex flex-col items-center justify-center h-80 text-center p-6 border border-white/5 border-dashed rounded-xl bg-slate-950/20 font-sans">
+          <div className="w-12 h-12 rounded-full bg-slate-900 border border-white/5 flex items-center justify-center mb-4">
+            <Sparkles size={20} className="text-brand-purple animate-pulse" />
+          </div>
+          <strong className="text-slate-200 text-xs font-semibold uppercase tracking-wider block font-mono">{details.title}</strong>
+          <p className="text-[11px] text-zinc-500 mt-2 max-w-[280px] leading-relaxed">{details.description}</p>
+          {details.prompt && (
+            <div className="mt-4 p-2 bg-slate-950/60 rounded-lg border border-white/5 inline-flex items-center gap-1.5 text-[10px] text-brand-cyan font-mono select-all cursor-pointer" title="Double click to copy prompt text">
+              <span className="text-zinc-600 font-bold uppercase text-[8px] tracking-widest bg-slate-900 border border-white/5 px-1.5 py-0.5 rounded">Suggested prompt</span>
+              <span>"{details.prompt}"</span>
+            </div>
+          )}
         </div>
       );
     }

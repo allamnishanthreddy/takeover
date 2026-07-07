@@ -38,72 +38,75 @@ import { EmployeeModal, MeetingModal, MailModal, WhatsAppModal, StatsDetailModal
 import TimeMachine from './components/TimeMachine';
 import confetti from 'canvas-confetti';
 
+// Numeric count-up animation component
+export function AnimatedCounter({ value, duration = 1200, prefix = '', suffix = '', decimals = 0 }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = parseFloat(value) || 0;
+    if (end === 0) {
+      setCount(0);
+      return;
+    }
+    
+    const startTime = performance.now();
+    let animationFrameId;
+    
+    const updateCount = (timestamp) => {
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing out quadratic
+      const easeProgress = progress * (2 - progress);
+      const current = start + easeProgress * (end - start);
+      
+      setCount(current);
+      
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(updateCount);
+      }
+    };
+    
+    animationFrameId = requestAnimationFrame(updateCount);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value, duration]);
+
+  const formatted = typeof count === 'number' 
+    ? count.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) 
+    : count;
+  return <span>{prefix}{formatted}{suffix}</span>;
+}
+
+const gridContainerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const gridItemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 25 } }
+};
+
 // Default Document Template Payloads
 const DEFAULT_DOCUMENTS = {
-  offer_letter: {
-    company: 'NEXUS AI SYSTEMS INC.',
-    date: 'July 6, 2026',
-    name: 'Alex Rivera',
-    role: 'Frontend Engineering Intern',
-    salary: '$2,500',
-    startDate: 'August 1, 2026',
-    location: 'Remote (SF HQ Core)',
-    expiryDate: 'July 15, 2026'
-  },
-  invoice: {
-    company: 'NEXUS AI SYSTEMS INC.',
-    invoiceNo: 'INV-2026-089',
-    client: 'ABC Pvt Ltd',
-    clientAddress: 'Tech Park Hub, Block B, Bangalore',
-    date: 'July 6, 2026',
-    dueDate: 'August 6, 2026',
-    items: [
-      { desc: 'Enterprise SaaS Core License (Tier 3)', qty: 1, rate: 4500, total: 4500 },
-      { desc: 'Custom AI Agent Integration Services', qty: 20, rate: 120, total: 2400 }
-    ],
-    subtotal: 6900,
-    tax: 552,
-    total: 7452
-  },
-  quotation: {
-    company: 'NEXUS AI SYSTEMS INC.',
-    quoteNo: 'QT-2026-904',
-    client: 'XYZ Ltd',
-    clientLocation: 'Global Tech Park, London',
-    date: 'July 6, 2026',
-    expiryDate: 'August 6, 2026',
-    items: [
-      { desc: 'Nexus Business OS - Enterprise Node licenses', qty: 10, rate: 12000, total: 120000 },
-      { desc: 'Dedicated 24/7 Agent SLA Support Agreement', qty: 1, rate: 15000, total: 15000 }
-    ],
-    gross: 135000,
-    discount: 13500,
-    total: 121500
-  },
-  meeting_minutes: {
-    title: 'Vanguard Alignment Sync',
-    date: 'July 7, 2026',
-    time: '3:00 PM - 4:00 PM',
-    attendees: 'Jonathan Stark (CEO), Alex Rivera (HR), Vanguard Executives',
-    facilitator: 'Sales Agent Core',
-    agenda: [
-      'Reviewed Q3 enterprise software rollout requirements.',
-      'Evaluated custom knowledge base integrations with client CRM.',
-      'Discussed developer support SLA hours and pricing metrics.'
-    ],
-    actions: [
-      'Sales Agent to compile custom proposal before Tuesday.',
-      'Finance Agent to verify volume discount margins.',
-      'HR Agent to reserve engineer slot for sandbox setup.'
-    ]
-  },
+  offer_letter: null,
+  invoice: null,
+  quotation: null,
+  meeting_minutes: null,
   monthly_report: {
     title: 'July Q2 Performance Audit',
     period: 'June 2026 / Q2 Wrapup',
     revenue: '$642,800',
     utility: '94.2%',
     dealsClosed: '38',
-    growthRate: '14.2%'
+    growthRate: '14.2%',
+    summary: 'Executive Summary: System telemetry operational bounds checked. July gross revenue projections beat margin indicators by +4.2%. Support queues reconciled.'
   }
 };
 
@@ -172,19 +175,7 @@ export default function App() {
   // Chat Conversation logs
   const [chatHistory, setChatHistory] = useState(() => {
     const saved = localStorage.getItem('nexus_chat_history');
-    return saved ? JSON.parse(saved) : [
-      {
-        sender: 'ai',
-        text: "Good Evening, Nishanth 👋\n\nToday's Business Summary\n\n• Revenue: ₹1,82,500 (+12%)\n• 3 invoices are overdue\n• 2 employees are on leave\n• One client meeting at 4 PM\n• Inventory of Product X is low\n\nRecommended Actions:",
-        timestamp: '18:00',
-        agent: 'ceo',
-        choices: [
-          { label: '✓ Send payment reminders', value: 'Send payment reminders' },
-          { label: '✓ Restock Product X', value: 'Restock Product X' },
-          { label: '✓ Generate July Report', value: 'Generate July Sales Report' }
-        ]
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Calendar meetings
@@ -240,6 +231,7 @@ export default function App() {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsAppData, setWhatsAppData] = useState(null);
   const [statsModalType, setStatsModalType] = useState(null);
+  const [isCommandCenterTyping, setIsCommandCenterTyping] = useState(false);
   const [showTimeMachine, setShowTimeMachine] = useState(false);
 
   // AI Cognitive Rationale Explanation State
@@ -257,6 +249,30 @@ export default function App() {
     }, 1800);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isBootLoading && chatHistory.length === 0) {
+      setIsCommandCenterTyping(true);
+      const timer = setTimeout(() => {
+        setIsCommandCenterTyping(false);
+        setChatHistory([
+          {
+            sender: 'ai',
+            text: "Good Evening, Nishanth 👋\n\nToday's Business Summary\n\n• Revenue: $1,850,000 (+18.4%)\n• 3 invoices are overdue\n• 2 employees are on leave\n• One client meeting at 4 PM\n• Inventory of Product X is low\n\nRecommended Actions:",
+            timestamp: '18:00',
+            agent: 'ceo',
+            choices: [
+              { label: '✓ Send payment reminders', value: 'Send payment reminders' },
+              { label: '✓ Restock Product X', value: 'Restock Product X' },
+              { label: '✓ Generate July Report', value: 'Generate July Sales Report' }
+            ]
+          }
+        ]);
+        pushNotification("Nexus AI Core initialized business metrics", "info");
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isBootLoading, chatHistory.length]);
 
   // Global search input state
   const [searchQuery, setSearchQuery] = useState('');
@@ -698,7 +714,7 @@ export default function App() {
           setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
           setActiveAgents([]);
         }
-      }, 1100);
+      }, 650);
     } else if (action.type === 'intern') {
       setActiveDocKey('offer_letter');
       setChatHistory((prev) => [
@@ -758,7 +774,7 @@ export default function App() {
           setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
           setActiveAgents([]);
         }
-      }, 1100);
+      }, 650);
     }
   };
 
@@ -832,7 +848,7 @@ export default function App() {
           setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
           setActiveAgents([]);
         }
-      }, 1100);
+      }, 650);
     } else if (action.type === 'intern') {
       const steps = [
         { title: 'CEO Agent registers secondary intern intake', agent: 'ceo', description: 'Confirming software capacity...' },
@@ -894,7 +910,7 @@ export default function App() {
           setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
           setActiveAgents([]);
         }
-      }, 1100);
+      }, 650);
     } else if (action.type === 'meeting') {
       const steps = [
         { title: 'Sales Agent maps secondary meeting node', agent: 'sales', description: 'Creating contact calendar linkage...' },
@@ -951,7 +967,7 @@ export default function App() {
           setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
           setActiveAgents([]);
         }
-      }, 1100);
+      }, 650);
     }
   };
 
@@ -1156,7 +1172,7 @@ export default function App() {
           setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
           setActiveAgents([]);
         }
-      }, 1100);
+      }, 650);
       return;
     }
 
@@ -1310,7 +1326,7 @@ export default function App() {
           ...prev,
           {
             sender: 'ai',
-            text: 'Overdue payment reminders generated! Compiled ledger lists and opened the Email dispatcher modal with prefilled dunning notice text. Pushed 3 pending tasks to stats.',
+            text: 'I\'ve identified 3 overdue client accounts, compiled the dunning drafts, and queued email notifications in your outbox. The invoice records in your Business Memory have been synchronized to reflect these reminders.',
             timestamp: 'Just now',
             agent: 'finance'
           }
@@ -1320,7 +1336,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // WORKFLOW 8: RESTOCK PRODUCT X
@@ -1371,7 +1387,7 @@ export default function App() {
           ...prev,
           {
             sender: 'ai',
-            text: 'Purchase order signed and dispatched to supplier for 100x Product X ($8,200 allocated). Inventory buffer restored.',
+            text: 'I\'ve drafted and signed the procurement purchase order for 100x units of Product X ($8,200). The transaction has been recorded, and the updated buffer levels are committed to Business Memory.',
             timestamp: 'Just now',
             agent: 'finance'
           }
@@ -1381,7 +1397,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // WORKFLOW 6: GENERATE INVOICE
@@ -1457,7 +1473,7 @@ export default function App() {
           ...prev,
           {
             sender: 'ai',
-            text: 'Invoice INV-2026-090 generated for ABC Pvt Ltd ($7,452). Checked tax guidelines and pushed changes to database ledger. The Invoice has been loaded in the document preview panel.',
+            text: 'I\'ve generated the official invoice for ABC Pvt Ltd, registered the $7,452 transaction in your corporate general ledger, and updated your Total Revenue metrics. The copy is stored securely in your Memory Vault.',
             timestamp: 'Just now',
             agent: 'finance'
           }
@@ -1467,7 +1483,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // WORKFLOW 1: HIRE FRONTEND INTERN
@@ -1539,7 +1555,7 @@ export default function App() {
           ...prev,
           {
             sender: 'ai',
-            text: 'Offer Letter generated for candidate Alex Rivera! The contract has been routed to the Document Generator. Notice the Active Employees card on the left is flashing purple and has been incremented to 13.',
+            text: 'I\'ve compiled the corporate offer contract for Alex Rivera ($2,500/mo, Remote), appended the new hire record to the CRM directory index, and synchronized your roster logs in Business Memory.',
             timestamp: 'Just now',
             agent: 'hr'
           }
@@ -1550,7 +1566,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // WORKFLOW 2: MONTHLY SALES REPORT
@@ -1615,7 +1631,7 @@ export default function App() {
           ...prev,
           {
             sender: 'ai',
-            text: 'The July Q2 Performance Audit report has been compiled and is previewed on the right, showing 18.9% revenue growth. Note that the Total Revenue metric card is flashing cyan and has been updated to $764,300.',
+            text: 'I\'ve completed the July Performance Audit, compiled your net revenue growth models ($764,300), and updated your charts below. The audit document is stored in your Memory Vault and ready for download.',
             timestamp: 'Just now',
             agent: 'ceo'
           }
@@ -1626,7 +1642,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // WORKFLOW 3: SCHEDULE MEETING
@@ -1707,7 +1723,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // WORKFLOW 4: CREATE QUOTATION
@@ -1785,7 +1801,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // WORKFLOW 5: KNOWLEDGE POLICY QUERY
@@ -1864,7 +1880,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // GENERIC ORCHESTRATION FOR CUSTOM INPUTS
@@ -1936,7 +1952,7 @@ export default function App() {
         setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
         setActiveAgents([]);
       }
-    }, 1100);
+    }, 650);
   };
 
   // Simulating background telemetry fluctuations
@@ -2153,169 +2169,160 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 mt-6 space-y-6">
         
         {/* METRICS DASHBOARD GRID WITH PITCH GLOW STATES */}
-        <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <motion.section 
+          variants={gridContainerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+        >
           
           {/* Card 1: Revenue */}
-          <button
-            onClick={() => setStatsModalType('revenue')}
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
-              flashingStats.revenue
-                ? 'border-brand-cyan bg-brand-cyan/10 shadow-[0_0_25px_rgba(6,182,212,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/20'
-            }`}
-          >
-            <div className="flex justify-between items-start w-full">
-              <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Total Revenue</span>
-              <div className="p-1.5 rounded-lg bg-brand-cyan/15 text-brand-cyan"><DollarSign size={14} /></div>
-            </div>
-            <div className="mt-3 w-full">
-              <motion.h2
-                key={stats.revenue}
-                initial={{ scale: 0.95, opacity: 0.8 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-xl font-bold font-mono text-white m-0"
-              >
-                ${stats.revenue.toLocaleString()}
-              </motion.h2>
-              <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono mt-1">
-                <span>+18.4%</span>
-                <span>YoY Growth</span>
+          <motion.div variants={gridItemVariants} className="w-full h-full">
+            <button
+              onClick={() => setStatsModalType('revenue')}
+              className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
+                flashingStats.revenue
+                  ? 'border-brand-cyan bg-brand-cyan/10 shadow-[0_0_25px_rgba(6,182,212,0.4)] scale-102 z-20'
+                  : 'border-white/5 hover:border-white/20'
+              }`}
+            >
+              <div className="flex justify-between items-start w-full">
+                <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Total Revenue</span>
+                <div className="p-1.5 rounded-lg bg-brand-cyan/15 text-brand-cyan"><DollarSign size={14} /></div>
               </div>
-            </div>
-          </button>
+              <div className="mt-3 w-full">
+                <h2 className="text-xl font-bold font-mono text-white m-0">
+                  <AnimatedCounter value={stats.revenue} prefix="$" />
+                </h2>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono mt-1">
+                  <span>+18.4%</span>
+                  <span>YoY Growth</span>
+                </div>
+              </div>
+            </button>
+          </motion.div>
 
           {/* Card 2: Employees */}
-          <button
-            onClick={() => setStatsModalType('employees')}
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
-              flashingStats.employees
-                ? 'border-brand-purple bg-brand-purple/10 shadow-[0_0_25px_rgba(168,85,247,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/20'
-            }`}
-          >
-            <div className="flex justify-between items-start w-full">
-              <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Active Employees</span>
-              <div className="p-1.5 rounded-lg bg-brand-purple/15 text-brand-purple"><Users size={14} /></div>
-            </div>
-            <div className="mt-3 w-full">
-              <motion.h2
-                key={stats.employees}
-                initial={{ scale: 0.9, opacity: 0.8 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-xl font-bold font-mono text-white m-0"
-              >
-                {stats.employees}
-              </motion.h2>
-              <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-mono mt-1">
-                <span>1 pending onboarding</span>
+          <motion.div variants={gridItemVariants} className="w-full h-full">
+            <button
+              onClick={() => setStatsModalType('employees')}
+              className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
+                flashingStats.employees
+                  ? 'border-brand-purple bg-brand-purple/10 shadow-[0_0_25px_rgba(168,85,247,0.4)] scale-102 z-20'
+                  : 'border-white/5 hover:border-white/20'
+              }`}
+            >
+              <div className="flex justify-between items-start w-full">
+                <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Active Employees</span>
+                <div className="p-1.5 rounded-lg bg-brand-purple/15 text-brand-purple"><Users size={14} /></div>
               </div>
-            </div>
-          </button>
+              <div className="mt-3 w-full">
+                <h2 className="text-xl font-bold font-mono text-white m-0">
+                  <AnimatedCounter value={stats.employees} />
+                </h2>
+                <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-mono mt-1">
+                  <span>1 pending onboarding</span>
+                </div>
+              </div>
+            </button>
+          </motion.div>
 
           {/* Card 3: Sales Deals */}
-          <button
-            onClick={() => setStatsModalType('sales')}
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
-              flashingStats.salesCount
-                ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_25px_rgba(245,158,11,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/20'
-            }`}
-          >
-            <div className="flex justify-between items-start w-full">
-              <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Sales count</span>
-              <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-500"><TrendingUp size={14} /></div>
-            </div>
-            <div className="mt-3 w-full">
-              <motion.h2
-                key={stats.salesCount}
-                initial={{ scale: 0.9, opacity: 0.8 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-xl font-bold font-mono text-white m-0"
-              >
-                {stats.salesCount}
-              </motion.h2>
-              <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono mt-1">
-                <span>+12% this month</span>
+          <motion.div variants={gridItemVariants} className="w-full h-full">
+            <button
+              onClick={() => setStatsModalType('sales')}
+              className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
+                flashingStats.salesCount
+                  ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_25px_rgba(245,158,11,0.4)] scale-102 z-20'
+                  : 'border-white/5 hover:border-white/20'
+              }`}
+            >
+              <div className="flex justify-between items-start w-full">
+                <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Sales count</span>
+                <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-500"><TrendingUp size={14} /></div>
               </div>
-            </div>
-          </button>
+              <div className="mt-3 w-full">
+                <h2 className="text-xl font-bold font-mono text-white m-0">
+                  <AnimatedCounter value={stats.salesCount} />
+                </h2>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono mt-1">
+                  <span>+12% this month</span>
+                </div>
+              </div>
+            </button>
+          </motion.div>
 
           {/* Card 4: Pending Tasks */}
-          <button
-            onClick={() => setStatsModalType('tasks')}
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
-              flashingStats.pendingTasks
-                ? 'border-pink-500 bg-pink-500/10 shadow-[0_0_25px_rgba(236,72,153,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/20'
-            }`}
-          >
-            <div className="flex justify-between items-start w-full">
-              <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Pending Tasks</span>
-              <div className="p-1.5 rounded-lg bg-pink-500/15 text-pink-500"><Activity size={14} /></div>
-            </div>
-            <div className="mt-3 w-full">
-              <motion.h2
-                key={stats.pendingTasks}
-                initial={{ scale: 0.9, opacity: 0.8 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-xl font-bold font-mono text-white m-0"
-              >
-                {stats.pendingTasks}
-              </motion.h2>
-              <div className="flex items-center gap-1 text-[10px] text-brand-purple font-mono mt-1">
-                <span>AI queue priority high</span>
+          <motion.div variants={gridItemVariants} className="w-full h-full">
+            <button
+              onClick={() => setStatsModalType('tasks')}
+              className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
+                flashingStats.pendingTasks
+                  ? 'border-pink-500 bg-pink-500/10 shadow-[0_0_25px_rgba(236,72,153,0.4)] scale-102 z-20'
+                  : 'border-white/5 hover:border-white/20'
+              }`}
+            >
+              <div className="flex justify-between items-start w-full">
+                <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Pending Tasks</span>
+                <div className="p-1.5 rounded-lg bg-pink-500/15 text-pink-500"><Activity size={14} /></div>
               </div>
-            </div>
-          </button>
+              <div className="mt-3 w-full">
+                <h2 className="text-xl font-bold font-mono text-white m-0">
+                  <AnimatedCounter value={stats.pendingTasks} />
+                </h2>
+                <div className="flex items-center gap-1 text-[10px] text-brand-purple font-mono mt-1">
+                  <span>AI queue priority high</span>
+                </div>
+              </div>
+            </button>
+          </motion.div>
 
           {/* Card 5: Meetings Today */}
-          <button
-            onClick={() => setStatsModalType('meetings')}
-            className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
-              flashingStats.meetingsToday
-                ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_25px_rgba(59,130,246,0.4)] scale-102 z-20'
-                : 'border-white/5 hover:border-white/20'
-            }`}
-          >
-            <div className="flex justify-between items-start w-full">
-              <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Meetings Today</span>
-              <div className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400"><CalendarIcon size={14} /></div>
-            </div>
-            <div className="mt-3 w-full">
-              <motion.h2
-                key={stats.meetingsToday}
-                initial={{ scale: 0.9, opacity: 0.8 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-xl font-bold font-mono text-white m-0"
-              >
-                {stats.meetingsToday}
-              </motion.h2>
-              <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-mono mt-1">
-                <span>All Zoom bridges active</span>
+          <motion.div variants={gridItemVariants} className="w-full h-full">
+            <button
+              onClick={() => setStatsModalType('meetings')}
+              className={`glass-panel p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full ${
+                flashingStats.meetingsToday
+                  ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_25px_rgba(59,130,246,0.4)] scale-102 z-20'
+                  : 'border-white/5 hover:border-white/20'
+              }`}
+            >
+              <div className="flex justify-between items-start w-full">
+                <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Meetings Today</span>
+                <div className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400"><CalendarIcon size={14} /></div>
               </div>
-            </div>
-          </button>
+              <div className="mt-3 w-full">
+                <h2 className="text-xl font-bold font-mono text-white m-0">
+                  <AnimatedCounter value={stats.meetingsToday} />
+                </h2>
+                <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-mono mt-1">
+                  <span>All Zoom bridges active</span>
+                </div>
+              </div>
+            </button>
+          </motion.div>
 
           {/* Card 6: Workflow success */}
-          <button
-            onClick={() => setStatsModalType('workflows')}
-            className="glass-panel p-4 rounded-2xl border border-white/5 hover:border-white/20 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full"
-          >
-            <div className="flex justify-between items-start w-full">
-              <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Workflow Success</span>
-              <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400"><CheckCircle2 size={14} /></div>
-            </div>
-            <div className="mt-3 w-full">
-              <h2 className="text-xl font-bold font-mono text-white m-0">
-                {stats.successRate}%
-              </h2>
-              <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono mt-1">
-                <span>Autonomous status OK</span>
+          <motion.div variants={gridItemVariants} className="w-full h-full">
+            <button
+              onClick={() => setStatsModalType('workflows')}
+              className="glass-panel p-4 rounded-2xl border border-white/5 hover:border-white/20 relative overflow-hidden flex flex-col justify-between cursor-pointer hover:scale-102 hover:shadow-lg active:scale-98 text-left w-full h-full"
+            >
+              <div className="flex justify-between items-start w-full">
+                <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono tracking-wider">Workflow Success</span>
+                <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400"><CheckCircle2 size={14} /></div>
               </div>
-            </div>
-          </button>
-
-        </section>
+              <div className="mt-3 w-full">
+                <h2 className="text-xl font-bold font-mono text-white m-0">
+                  <AnimatedCounter value={stats.successRate} decimals={1} suffix="%" />
+                </h2>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono mt-1">
+                  <span>Autonomous status OK</span>
+                </div>
+              </div>
+            </button>
+          </motion.div>
+        </motion.section>
 
         {/* AGENTS GRID */}
         <section className="space-y-3">
@@ -2326,7 +2333,7 @@ export default function App() {
             </h3>
             <span className="text-[10px] text-zinc-500">Highlighted cards show active workers</span>
           </div>
-          <AgentGrid activeAgents={activeAgents} />
+          <AgentGrid activeAgents={activeAgents} pendingMemoryAction={pendingMemoryAction} />
         </section>
 
         {/* SPLIT SCREEN: CONSOLE & ACTIONS LEFT, TIMELINE & PREVIEWS RIGHT */}
@@ -2338,6 +2345,8 @@ export default function App() {
               onExecuteCommand={handleExecuteCommand}
               isRunning={workflow.isRunning}
               chatHistory={chatHistory}
+              isTyping={isCommandCenterTyping}
+              workflow={workflow}
             />
             <AnalyticsPanel stats={stats} />
           </div>

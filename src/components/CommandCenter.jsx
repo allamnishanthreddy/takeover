@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Terminal, Sparkles, User, ChevronRight } from 'lucide-react';
+import { Send, Terminal, Sparkles, User, ChevronRight, Mic, MicOff } from 'lucide-react';
 
 const DEMO_COMMANDS = [
   { text: "Hire a frontend intern", label: "Hire Intern", agent: "HR" },
@@ -9,9 +9,10 @@ const DEMO_COMMANDS = [
   { text: "What is our leave policy?", label: "Leave Policy", agent: "Knowledge" }
 ];
 
-export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory = [] }) {
+export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory = [], isTyping = false, workflow = {} }) {
   const [command, setCommand] = useState('');
-  const chatEndRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const chatContainerRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,16 +31,54 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
     onExecuteCommand(choiceText);
   };
 
-  // Scroll to bottom when history updates
+  const handleVoiceCommand = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Google Chrome or Safari.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onerror = (event) => {
+      console.error(event);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
+      const speechToText = event.results[0][0].transcript;
+      setCommand(speechToText);
+    };
+
+    recognition.start();
+  };
+
+  // Scroll to bottom of container when history or typing updates (isolated scrolling)
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, isRunning]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  }, [chatHistory, isRunning, isTyping]);
 
   return (
     <div className="glass-panel p-6 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[460px] h-[520px]">
       {/* Decorative gradient light */}
-      <div className="absolute -top-12 -right-12 w-32 h-32 bg-brand-purple/20 rounded-full blur-3xl" />
-      <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-brand-cyan/20 rounded-full blur-3xl" />
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-brand-purple/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-brand-cyan/20 rounded-full blur-3xl animate-pulse" />
 
       <div>
         {/* Header Info */}
@@ -56,15 +95,15 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
         </div>
 
         {/* Live Chat logs */}
-        <div className="h-[270px] overflow-y-auto no-scrollbar pr-1 mb-4 space-y-3">
-          {chatHistory.length === 0 ? (
+        <div ref={chatContainerRef} className="h-[270px] overflow-y-auto no-scrollbar pr-1 mb-4 space-y-3">
+          {chatHistory.length === 0 && !isTyping ? (
             <div className="h-full flex flex-col items-center justify-center text-center text-zinc-500 py-4">
               <div className="w-10 h-10 rounded-full bg-slate-900 border border-white/5 flex items-center justify-center mb-3">
-                <Sparkles size={16} className="text-brand-purple" />
+                <Sparkles size={16} className="text-brand-purple animate-spin-slow" />
               </div>
               <p className="text-xs font-semibold text-zinc-400">Welcome to Nexus Autonomous OS</p>
               <p className="text-[11px] text-zinc-500 mt-1 max-w-[280px] leading-relaxed">
-                Choose a quick action below or type a command to trigger multi-agent business operations.
+                Choose a quick action below or type/speak a command to trigger multi-agent business operations.
               </p>
             </div>
           ) : (
@@ -97,7 +136,7 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
                         </span>
                       )}
                       
-                      <p>{chat.text}</p>
+                      <p className="whitespace-pre-line">{chat.text}</p>
 
                       {/* Interactive choices buttons for Business Memory */}
                       {!isUser && chat.choices && (
@@ -125,19 +164,53 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
                 );
               })}
 
+              {/* Delayed AI Greeting Typing Indicator */}
+              {isTyping && (
+                <div className="flex gap-2.5 justify-start">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-brand-purple to-brand-blue flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0">
+                    N
+                  </div>
+                  <div className="bg-slate-900/90 border border-white/5 text-slate-400 rounded-2xl rounded-tl-none p-3 text-[10px] flex items-center gap-1.5 font-mono">
+                    <span>CEO Agent is formulating metrics summary</span>
+                    <span className="flex gap-0.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 bg-brand-cyan rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-brand-cyan rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-brand-cyan rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Loader placeholder while workflow runs */}
               {isRunning && (
                 <div className="flex gap-2.5 justify-start">
                   <div className="w-6 h-6 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center flex-shrink-0">
                     <div className="w-3 h-3 border-2 border-brand-cyan border-t-transparent rounded-full animate-spin" />
                   </div>
-                  <div className="bg-slate-900/60 border border-white/5 text-zinc-500 rounded-2xl rounded-tl-none p-3 text-xs leading-relaxed italic animate-pulse">
-                    Orchestrating agent workflow parameters...
+                  <div className="bg-slate-900/60 border border-white/5 text-zinc-300 rounded-2xl rounded-tl-none p-3 text-xs leading-relaxed font-mono w-[85%]">
+                    <span className="text-[9px] text-brand-cyan uppercase tracking-wider block mb-1">
+                      ↳ Active Pipeline Run: {workflow?.command || 'Processing'}
+                    </span>
+                    <div className="space-y-1 mt-1.5 border-t border-white/5 pt-1.5">
+                      {workflow?.steps?.map((step, idx) => {
+                        const isCurrent = idx === workflow.activeStepIndex;
+                        const isDone = idx < workflow.activeStepIndex;
+                        return (
+                          <div key={idx} className="flex items-center gap-1.5 text-[9px] leading-none py-0.5">
+                            <span className={isDone ? 'text-green-400 font-bold' : isCurrent ? 'text-brand-purple font-bold animate-pulse' : 'text-zinc-500'}>
+                              {isDone ? '✓' : isCurrent ? '▶' : '○'}
+                            </span>
+                            <span className={isCurrent ? 'text-slate-100 font-semibold' : isDone ? 'text-zinc-400 font-medium' : 'text-zinc-500'}>
+                              {step.title}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
               
-              <div ref={chatEndRef} />
             </div>
           )}
         </div>
@@ -153,9 +226,20 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
               value={command}
               onChange={(e) => setCommand(e.target.value)}
               disabled={isRunning}
-              placeholder={isRunning ? "AI Core is executing agent path..." : "Type instructions (e.g. 'Hire a frontend intern')..."}
-              className="w-full bg-slate-950/80 border border-white/10 hover:border-brand-purple/40 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan text-slate-100 placeholder-zinc-500 pl-4 pr-14 py-3.5 rounded-xl text-xs transition-all shadow-inner disabled:opacity-60 disabled:cursor-not-allowed"
+              placeholder={isRunning ? "AI Core is executing agent path..." : isListening ? "Listening to voice input..." : "Type instructions or speak..."}
+              className="w-full bg-slate-950/80 border border-white/10 hover:border-brand-purple/40 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan text-slate-100 placeholder-zinc-500 pl-4 pr-20 py-3.5 rounded-xl text-xs transition-all shadow-inner disabled:opacity-60 disabled:cursor-not-allowed"
             />
+            {/* Microphone Voice Button */}
+            <button
+              type="button"
+              onClick={handleVoiceCommand}
+              disabled={isRunning}
+              className={`absolute right-10 p-2 rounded-lg text-zinc-400 hover:text-brand-purple hover:bg-white/5 active:scale-95 transition-all cursor-pointer ${isListening ? 'text-brand-purple animate-pulse bg-brand-purple/10' : ''}`}
+              title="Voice Input Command"
+            >
+              {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+            </button>
+            {/* Send Button */}
             <button
               type="submit"
               disabled={!command.trim() || isRunning}

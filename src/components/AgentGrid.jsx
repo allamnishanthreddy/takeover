@@ -50,12 +50,57 @@ const AGENTS = [
   }
 ];
 
-export default function AgentGrid({ activeAgents = [] }) {
+export default function AgentGrid({ activeAgents = [], pendingMemoryAction = null }) {
+  const getAgentStatus = (agentId, isActive) => {
+    // Intercept if Sales Agent is awaiting human confirmation/approval
+    if (agentId === 'sales' && pendingMemoryAction) {
+      return {
+        label: 'Waiting Approval',
+        color: 'bg-red-500 animate-ping',
+        bgClass: 'bg-red-500/10 border-red-500/25',
+        textClass: 'text-red-400 font-bold'
+      };
+    }
+
+    if (!isActive) {
+      switch (agentId) {
+        case 'ceo':
+          return { label: 'Monitoring Business', color: 'bg-emerald-500', bgClass: 'bg-emerald-500/10 border-emerald-500/20', textClass: 'text-emerald-400 font-bold' };
+        case 'hr':
+          return { label: 'Roster In Sync', color: 'bg-emerald-500', bgClass: 'bg-emerald-500/10 border-emerald-500/20', textClass: 'text-emerald-400 font-bold' };
+        case 'finance':
+          return { label: 'Ledger Closed', color: 'bg-emerald-500', bgClass: 'bg-emerald-500/10 border-emerald-500/20', textClass: 'text-emerald-400 font-bold' };
+        case 'sales':
+          return { label: 'CRM Connected', color: 'bg-emerald-500', bgClass: 'bg-emerald-500/10 border-emerald-500/20', textClass: 'text-emerald-400 font-bold' };
+        case 'knowledge':
+          return { label: 'System Indexed', color: 'bg-emerald-500', bgClass: 'bg-emerald-500/10 border-emerald-500/20', textClass: 'text-emerald-400 font-bold' };
+        default:
+          return { label: 'Idle', color: 'bg-zinc-500', bgClass: 'bg-zinc-500/10 border-zinc-500/20', textClass: 'text-zinc-500' };
+      }
+    } else {
+      switch (agentId) {
+        case 'ceo':
+          return { label: 'Coordinating Chain', color: 'bg-brand-purple animate-pulse', bgClass: 'bg-brand-purple/10 border-brand-purple/20', textClass: 'text-brand-purple font-bold' };
+        case 'hr':
+          return { label: 'Onboarding Candidate', color: 'bg-amber-500 animate-pulse', bgClass: 'bg-amber-500/10 border-amber-500/20', textClass: 'text-amber-500 font-bold' };
+        case 'finance':
+          return { label: 'Compiling Invoices', color: 'bg-amber-500 animate-pulse', bgClass: 'bg-amber-500/10 border-amber-500/20', textClass: 'text-amber-500 font-bold' };
+        case 'sales':
+          return { label: 'Syncing CRM Leads', color: 'bg-blue-500 animate-pulse', bgClass: 'bg-blue-500/10 border-blue-500/20', textClass: 'text-blue-400 font-bold' };
+        case 'knowledge':
+          return { label: 'Querying Database', color: 'bg-cyan-500 animate-pulse', bgClass: 'bg-cyan-500/10 border-cyan-500/20', textClass: 'text-brand-cyan font-bold' };
+        default:
+          return { label: 'Processing', color: 'bg-brand-purple animate-pulse', bgClass: 'bg-brand-purple/10 border-brand-purple/20', textClass: 'text-brand-purple font-bold' };
+      }
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
       {AGENTS.map((agent) => {
         const IconComponent = agent.icon;
         const isActive = activeAgents.includes(agent.id);
+        const statusInfo = getAgentStatus(agent.id, isActive);
 
         return (
           <motion.div
@@ -94,17 +139,11 @@ export default function AgentGrid({ activeAgents = [] }) {
                   <IconComponent size={18} className={isActive ? 'animate-bounce' : ''} />
                 </div>
                 
-                {/* Active Indicator */}
-                {isActive ? (
-                  <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-brand-purple uppercase bg-brand-purple/10 px-2 py-0.5 rounded-full border border-brand-purple/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-purple animate-ping" />
-                    Working
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                    Idle
-                  </span>
-                )}
+                {/* Dynamic Status Badge */}
+                <span className={`flex items-center gap-1.5 text-[9px] font-mono uppercase bg-slate-950/80 px-2 py-1 rounded-lg border ${statusInfo.bgClass}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.color}`} />
+                  <span className={statusInfo.textClass}>{statusInfo.label}</span>
+                </span>
               </div>
 
               {/* Identity */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, Award, Activity, DollarSign } from 'lucide-react';
+import { TrendingUp, Award, Activity, DollarSign, Sparkles } from 'lucide-react';
 
 const REVENUE_DATA = [
   { name: 'Jan', revenue: 45000, expenses: 15000 },
@@ -172,6 +172,19 @@ export default function AnalyticsPanel({ stats = {} }) {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Today's Autonomous Insight Banner */}
+      <div className="bg-brand-cyan/5 border border-brand-cyan/20 rounded-xl p-3 mb-4 flex items-start gap-2.5">
+        <div className="p-1.5 bg-brand-cyan/15 text-brand-cyan rounded-lg flex-shrink-0 mt-0.5">
+          <Sparkles size={12} className="animate-pulse" />
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-mono tracking-wider text-brand-cyan block font-bold">Today's Autonomous Insight</span>
+          <p className="text-[11px] text-zinc-300 mt-0.5 leading-relaxed">
+            Revenue grew 18.4% today because repeat annual licensing contracts contributed 75% of net profit. CEO Agent recommends targeted developer upsells to maximize current SLA expansions.
+          </p>
         </div>
       </div>
 
