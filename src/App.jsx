@@ -95,10 +95,63 @@ const gridItemVariants = {
 
 // Default Document Template Payloads
 const DEFAULT_DOCUMENTS = {
-  offer_letter: null,
-  invoice: null,
-  quotation: null,
-  meeting_minutes: null,
+  offer_letter: {
+    company: 'NEXUS AI SYSTEMS INC.',
+    date: 'July 6, 2026',
+    name: 'Alex Rivera',
+    role: 'Frontend Engineering Intern',
+    salary: '$2,500',
+    startDate: 'August 1, 2026',
+    location: 'Remote (SF HQ Core)',
+    expiryDate: 'July 15, 2026'
+  },
+  invoice: {
+    company: 'NEXUS AI SYSTEMS INC.',
+    invoiceNo: 'INV-2026-089',
+    client: 'ABC Pvt Ltd',
+    clientAddress: 'Tech Park Hub, Block B, Bangalore',
+    date: 'July 6, 2026',
+    dueDate: 'August 6, 2026',
+    items: [
+      { desc: 'Enterprise SaaS Core License (Tier 3)', qty: 1, rate: 4500, total: 4500 },
+      { desc: 'Custom AI Agent Integration Services', qty: 20, rate: 120, total: 2400 }
+    ],
+    subtotal: 6900,
+    tax: 552,
+    total: 7452
+  },
+  quotation: {
+    company: 'NEXUS AI SYSTEMS INC.',
+    quoteNo: 'QT-2026-904',
+    client: 'XYZ Ltd',
+    clientLocation: 'Global Tech Park, London',
+    date: 'July 6, 2026',
+    expiryDate: 'August 6, 2026',
+    items: [
+      { desc: 'Nexus Business OS - Enterprise Node licenses', qty: 10, rate: 12000, total: 120000 },
+      { desc: 'Dedicated 24/7 Agent SLA Support Agreement', qty: 1, rate: 15000, total: 15000 }
+    ],
+    gross: 135000,
+    discount: 13500,
+    total: 121500
+  },
+  meeting_minutes: {
+    title: 'Vanguard Alignment Sync',
+    date: 'July 7, 2026',
+    time: '3:00 PM - 4:00 PM',
+    attendees: 'Jonathan Stark (CEO), Alex Rivera (HR), Vanguard Executives',
+    facilitator: 'Sales Agent Core',
+    agenda: [
+      'Reviewed Q3 enterprise software rollout requirements.',
+      'Evaluated custom knowledge base integrations with client CRM.',
+      'Discussed developer support SLA hours and pricing metrics.'
+    ],
+    actions: [
+      'Sales Agent to compile custom proposal before Tuesday.',
+      'Finance Agent to verify volume discount margins.',
+      'HR Agent to reserve engineer slot for sandbox setup.'
+    ]
+  },
   monthly_report: {
     title: 'July Q2 Performance Audit',
     period: 'June 2026 / Q2 Wrapup',
@@ -184,10 +237,15 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_MEETINGS;
   });
 
-  // Document templates state
   const [documents, setDocuments] = useState(() => {
     const saved = localStorage.getItem('nexus_documents');
-    return saved ? JSON.parse(saved) : DEFAULT_DOCUMENTS;
+    return saved ? JSON.parse(saved) : {
+      offer_letter: null,
+      invoice: null,
+      quotation: null,
+      meeting_minutes: null,
+      monthly_report: DEFAULT_DOCUMENTS.monthly_report
+    };
   });
   const [activeDocKey, setActiveDocKey] = useState('monthly_report');
 
