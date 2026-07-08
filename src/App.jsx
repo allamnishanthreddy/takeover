@@ -839,10 +839,16 @@ export default function App() {
           setActiveAgents([steps[currentStep].agent]);
         } else {
           clearInterval(interval);
+          setStats((prev) => ({
+            ...prev,
+            workflowsCount: prev.workflowsCount + 1,
+            documentsCount: prev.documentsCount + 1,
+            timeSavedMinutes: prev.timeSavedMinutes + 45
+          }));
           setDocuments((prev) => ({
             ...prev,
             quotation: {
-              ...prev.quotation,
+              ...(prev.quotation || DEFAULT_DOCUMENTS.quotation),
               client: 'ABC Pvt Ltd (REVISED)',
               total: 142500,
               items: [
@@ -1007,11 +1013,18 @@ export default function App() {
           setActiveAgents([steps[currentStep].agent]);
         } else {
           clearInterval(interval);
-          setStats(prev => ({ ...prev, salesCount: prev.salesCount + 1 }));
+          setStats(prev => ({
+            ...prev,
+            salesCount: prev.salesCount + 1,
+            activeWorkflows: Math.max(0, prev.activeWorkflows - 1),
+            workflowsCount: prev.workflowsCount + 1,
+            documentsCount: prev.documentsCount + 1,
+            timeSavedMinutes: prev.timeSavedMinutes + 45
+          }));
           setDocuments((prev) => ({
             ...prev,
             quotation: {
-              ...prev.quotation,
+              ...(prev.quotation || DEFAULT_DOCUMENTS.quotation),
               quoteNo: 'QT-2026-905',
               client: 'ABC Pvt Ltd (v2)',
               total: 162000,
@@ -1076,11 +1089,18 @@ export default function App() {
           setActiveAgents([steps[currentStep].agent]);
         } else {
           clearInterval(interval);
-          setStats(prev => ({ ...prev, employees: prev.employees + 1 }));
+          setStats(prev => ({
+            ...prev,
+            employees: prev.employees + 1,
+            activeWorkflows: Math.max(0, prev.activeWorkflows - 1),
+            workflowsCount: prev.workflowsCount + 1,
+            documentsCount: prev.documentsCount + 1,
+            timeSavedMinutes: prev.timeSavedMinutes + 120
+          }));
           setDocuments((prev) => ({
             ...prev,
             offer_letter: {
-              ...prev.offer_letter,
+              ...(prev.offer_letter || DEFAULT_DOCUMENTS.offer_letter),
               name: 'Liam Patel',
               role: 'Frontend Engineering Intern (Version 2)',
               date: 'July 6, 2026'
@@ -1636,7 +1656,10 @@ export default function App() {
           ...prev,
           revenue: prev.revenue + 7452,
           salesCount: prev.salesCount + 1,
-          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1),
+          workflowsCount: prev.workflowsCount + 1,
+          documentsCount: prev.documentsCount + 1,
+          timeSavedMinutes: prev.timeSavedMinutes + 60
         }));
         flashStatCard('revenue');
         flashStatCard('salesCount');
@@ -1728,7 +1751,10 @@ export default function App() {
           ...prev,
           employees: prev.employees + 1,
           pendingTasks: prev.pendingTasks - 1,
-          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1),
+          workflowsCount: prev.workflowsCount + 1,
+          documentsCount: prev.documentsCount + 1,
+          timeSavedMinutes: prev.timeSavedMinutes + 120
         }));
         flashStatCard('employees');
 
@@ -1805,7 +1831,10 @@ export default function App() {
         setStats((prev) => ({
           ...prev,
           revenue: 764300,
-          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1),
+          workflowsCount: prev.workflowsCount + 1,
+          documentsCount: prev.documentsCount + 1,
+          timeSavedMinutes: prev.timeSavedMinutes + 90
         }));
         flashStatCard('revenue');
 
@@ -1895,7 +1924,10 @@ export default function App() {
         setStats((prev) => ({
           ...prev,
           meetingsToday: prev.meetingsToday + 1,
-          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1),
+          workflowsCount: prev.workflowsCount + 1,
+          meetingsCount: prev.meetingsCount + 1,
+          timeSavedMinutes: prev.timeSavedMinutes + 30
         }));
         flashStatCard('meetingsToday');
 
@@ -1967,7 +1999,10 @@ export default function App() {
         setStats((prev) => ({
           ...prev,
           salesCount: prev.salesCount + 1,
-          activeWorkflows: Math.max(0, prev.activeWorkflows - 1)
+          activeWorkflows: Math.max(0, prev.activeWorkflows - 1),
+          workflowsCount: prev.workflowsCount + 1,
+          documentsCount: prev.documentsCount + 1,
+          timeSavedMinutes: prev.timeSavedMinutes + 45
         }));
         flashStatCard('salesCount');
 
@@ -2387,19 +2422,21 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-6 text-xs font-mono relative z-10">
             <div className="flex items-center gap-2 border-r border-white/5 pr-4">
               <span className="text-zinc-500">Workflows:</span>
-              <strong className="text-brand-cyan font-bold">6 Executed</strong>
+              <strong className="text-brand-cyan font-bold">{stats.workflowsCount} Executed</strong>
             </div>
             <div className="flex items-center gap-2 border-r border-white/5 pr-4">
               <span className="text-zinc-500">Documents:</span>
-              <strong className="text-brand-purple font-bold">18 Indexed</strong>
+              <strong className="text-brand-purple font-bold">{stats.documentsCount} Indexed</strong>
             </div>
             <div className="flex items-center gap-2 border-r border-white/5 pr-4">
               <span className="text-zinc-500">Meetings:</span>
-              <strong className="text-blue-400 font-bold">4 Scheduled</strong>
+              <strong className="text-blue-400 font-bold">{stats.meetingsCount} Scheduled</strong>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-zinc-500">Time Saved:</span>
-              <strong className="text-emerald-400 font-bold animate-pulse flex items-center gap-1">⚡ 6h 42m</strong>
+              <strong className="text-emerald-400 font-bold animate-pulse flex items-center gap-1">
+                ⚡ {Math.floor(stats.timeSavedMinutes / 60)}h {stats.timeSavedMinutes % 60}m
+              </strong>
             </div>
           </div>
         </div>
