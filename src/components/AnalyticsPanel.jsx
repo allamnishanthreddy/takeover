@@ -150,6 +150,10 @@ export default function AnalyticsPanel({ stats = {} }) {
           <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
             <TrendingUp size={16} className="text-brand-cyan" />
             Performance Analytics
+            <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full uppercase ml-1.5">
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full live-pulse-green flex-shrink-0" />
+              Live Data
+            </span>
           </h3>
           <p className="text-xs text-zinc-400 mt-0.5">Real-time system telemetry and agent logs.</p>
         </div>

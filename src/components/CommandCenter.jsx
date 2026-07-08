@@ -14,6 +14,23 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
   const [isListening, setIsListening] = useState(false);
   const chatContainerRef = useRef(null);
 
+  const PLACEHOLDERS = [
+    "Generate July Sales Report",
+    "Hire Frontend Intern",
+    "Schedule Board Meeting",
+    "Show Pending Invoices",
+    "Create quotation for ABC Pvt Ltd",
+    "What is our leave policy?"
+  ];
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPlaceholderIdx((prev) => (prev + 1) % PLACEHOLDERS.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!command.trim() || isRunning) return;
@@ -101,9 +118,9 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
               <div className="w-10 h-10 rounded-full bg-slate-900 border border-white/5 flex items-center justify-center mb-3">
                 <Sparkles size={16} className="text-brand-purple animate-spin-slow" />
               </div>
-              <p className="text-xs font-semibold text-zinc-400">Welcome to Nexus Autonomous OS</p>
+              <p className="text-xs font-semibold text-zinc-400">Ask Nexus AI</p>
               <p className="text-[11px] text-zinc-500 mt-1 max-w-[280px] leading-relaxed">
-                Choose a quick action below or type/speak a command to trigger multi-agent business operations.
+                to automate your next business workflow.
               </p>
             </div>
           ) : (
@@ -226,7 +243,7 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
               value={command}
               onChange={(e) => setCommand(e.target.value)}
               disabled={isRunning}
-              placeholder={isRunning ? "AI Core is executing agent path..." : isListening ? "Listening to voice input..." : "Type instructions or speak..."}
+              placeholder={isRunning ? "AI Core is executing agent path..." : isListening ? "Listening to voice input..." : `e.g. "${PLACEHOLDERS[placeholderIdx]}"`}
               className="w-full bg-slate-950/80 border border-white/10 hover:border-brand-purple/40 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan text-slate-100 placeholder-zinc-500 pl-4 pr-20 py-3.5 rounded-xl text-xs transition-all shadow-inner disabled:opacity-60 disabled:cursor-not-allowed"
             />
             {/* Microphone Voice Button */}

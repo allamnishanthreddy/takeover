@@ -190,6 +190,52 @@ const INITIAL_ACTIVITIES = [
   { time: '09:19', desc: 'Sales pipeline reports pushed to Executive team', category: 'ceo' }
 ];
 
+// Programmatic Synthesized Audio Chimes (Web Audio API for zero asset dependencies)
+const playAudioTone = (freq = 440, type = 'sine', duration = 0.1, volume = 0.05) => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch (e) {
+    // Gracefully handle browser autoplay blocks
+  }
+};
+
+// Satisfying electronic click sound
+const playClickSound = () => {
+  playAudioTone(750, 'sine', 0.04, 0.012);
+};
+
+// Success workflow completed chime (ascending major third)
+const playSuccessSound = () => {
+  playAudioTone(523.25, 'sine', 0.08, 0.012); // C5
+  setTimeout(() => {
+    playAudioTone(659.25, 'sine', 0.12, 0.012); // E5
+  }, 60);
+};
+
+// System notification alert
+const playNotificationSound = () => {
+  playAudioTone(587.33, 'sine', 0.08, 0.012); // D5
+  setTimeout(() => {
+    playAudioTone(880, 'sine', 0.14, 0.012); // A5
+  }, 70);
+};
+
 export default function App() {
   // Core dashboard metrics state
   const [stats, setStats] = useState(() => {
@@ -300,12 +346,48 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('nexus_theme') || 'dark');
   const [showFloatingAssistant, setShowFloatingAssistant] = useState(false);
   const [isBootLoading, setIsBootLoading] = useState(true);
+  const [bootStatus, setBootStatus] = useState('Initializing Nexus AI...');
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsBootLoading(false);
-    }, 1800);
-    return () => clearTimeout(timer);
+    const BOOT_STATUSES = [
+      'Initializing Nexus AI...',
+      'Loading Business Memory...',
+      'Connecting AI Agents...',
+      'Loading Analytics...',
+      'Done'
+    ];
+    let index = 0;
+    const interval = setInterval(() => {
+      index++;
+      if (index < BOOT_STATUSES.length) {
+        setBootStatus(BOOT_STATUSES[index]);
+      } else {
+        clearInterval(interval);
+        setTimeout(() => {
+          setIsBootLoading(false);
+        }, 300);
+      }
+    }, 600);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Small Live Operating System Clock (⭐ 12)
+  const [currentTime, setCurrentTime] = useState('');
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = days[now.getDay()];
+      const date = now.getDate();
+      const month = months[now.getMonth()];
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      setCurrentTime(`${day} | ${date} ${month} | ${hours}:${minutes} IST`);
+    };
+    updateClock();
+    const timer = setInterval(updateClock, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -316,13 +398,13 @@ export default function App() {
         setChatHistory([
           {
             sender: 'ai',
-            text: "Good Evening, Nishanth 👋\n\nToday's Business Summary\n\n• Revenue: $1,850,000 (+18.4%)\n• 3 invoices are overdue\n• 2 employees are on leave\n• One client meeting at 4 PM\n• Inventory of Product X is low\n\nRecommended Actions:",
+            text: "Good Evening Nishanth 👋\n\n3 workflows completed today.\n\nRevenue increased 18%.\n\nTwo meetings remaining.\n\nWould you like today's summary?",
             timestamp: '18:00',
             agent: 'ceo',
             choices: [
+              { label: '✓ Yes, show summary', value: 'Generate July Sales Report' },
               { label: '✓ Send payment reminders', value: 'Send payment reminders' },
-              { label: '✓ Restock Product X', value: 'Restock Product X' },
-              { label: '✓ Generate July Report', value: 'Generate July Sales Report' }
+              { label: '✓ Restock Product X', value: 'Restock Product X' }
             ]
           }
         ]);
@@ -344,7 +426,7 @@ export default function App() {
     setSearchIsLoading(true);
     const timer = setTimeout(() => {
       setSearchIsLoading(false);
-    }, 450);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -353,7 +435,7 @@ export default function App() {
 
   // Floating Presenter Panel
   const [showPresenter, setShowPresenter] = useState(true);
-  const [presenterHighlightText, setPresenterHighlightText] = useState("Tip: Click 'Run' next to any demo scenario in this panel to trigger the workflow. Watch the timeline animate and the highlighted metric cards glow when completed!");
+  const [presenterHighlightText, setPresenterHighlightText] = useState("Need help? Ask Nexus AI anything.");
 
   // Persist states to localStorage
   useEffect(() => {
@@ -400,6 +482,18 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Global synthesized click audio sound effects for premium interaction responsiveness
+  useEffect(() => {
+    const handleGlobalClick = (e) => {
+      const target = e.target.closest('button, a, [role="button"]');
+      if (target) {
+        playClickSound();
+      }
+    };
+    window.addEventListener('click', handleGlobalClick, { capture: true });
+    return () => window.removeEventListener('click', handleGlobalClick, { capture: true });
+  }, []);
+
   // Centralized Chained Workflow Event Trigger
   useEffect(() => {
     if (!workflow.isRunning && postWorkflowChain) {
@@ -441,6 +535,13 @@ export default function App() {
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4500);
+
+    // Play synthesized alert sound
+    if (type === 'success') {
+      playSuccessSound();
+    } else {
+      playNotificationSound();
+    }
   };
 
   const handleUndo = () => {
@@ -2048,8 +2149,8 @@ export default function App() {
             <h2 className="text-xl font-bold tracking-widest text-white uppercase font-mono text-glow-purple">
               NEXUS AI SYSTEMS
             </h2>
-            <p className="text-xs text-zinc-400 font-mono tracking-widest mt-2 uppercase">
-              Initializing Autonomous Operations Core
+            <p className="text-xs text-brand-cyan font-mono tracking-widest mt-2 uppercase font-bold animate-pulse">
+              {bootStatus}
             </p>
             
             {/* Dashboard Skeleton Preview Loader */}
@@ -2081,7 +2182,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-base font-bold tracking-tight text-white m-0 leading-none">Nexus AI</h1>
-              <p className="text-[10px] font-mono text-zinc-500 mt-1 uppercase tracking-wider">Autonomous Business OS</p>
+              <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase tracking-wider leading-none">Enterprise OS</p>
             </div>
           </div>
 
@@ -2105,7 +2206,7 @@ export default function App() {
                 </div>
                 {searchIsLoading ? (
                   <div className="text-center py-6 text-zinc-500 font-mono text-[10px] flex items-center justify-center gap-1.5 animate-pulse">
-                    <span>Searching...</span>
+                    <span>Searching Business Memory...</span>
                     <span className="flex gap-0.5">
                       <span className="w-1 bg-brand-cyan rounded-full h-1 animate-bounce" />
                       <span className="w-1 bg-brand-cyan rounded-full h-1 animate-bounce [animation-delay:0.2s]" />
@@ -2118,14 +2219,14 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-4 border-r border-white/5 pr-4 text-xs text-zinc-400 font-mono">
+            <div className="hidden xl:flex items-center gap-4 border-r border-white/5 pr-4 text-xs text-zinc-400 font-mono">
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Node 1: Online</span>
+                <span>CEO Agent: Monitoring</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>NLP Engine: Active</span>
+                <span>99.7% Operational</span>
               </div>
             </div>
 
@@ -2215,9 +2316,17 @@ export default function App() {
               </AnimatePresence>
             </div>
 
-            <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 px-2.5 py-1.5 rounded-xl">
-              <Shield size={12} />
-              <span>HACKATHON DEMO MODE</span>
+            {/* Dynamic Live Clock & Version Badge */}
+            <div className="hidden lg:flex items-center gap-3">
+              {currentTime && (
+                <div className="text-[10.5px] font-mono text-zinc-400 border border-white/5 bg-slate-900/60 px-3 py-1.5 rounded-xl">
+                  {currentTime}
+                </div>
+              )}
+              <div className="flex items-center gap-1 text-[11px] font-mono text-brand-purple bg-brand-purple/15 border border-brand-purple/35 px-2.5 py-1.5 rounded-xl font-bold uppercase tracking-wider">
+                <Shield size={12} />
+                <span>v1.0.0 Enterprise</span>
+              </div>
             </div>
           </div>
         </div>
@@ -2225,6 +2334,38 @@ export default function App() {
 
       {/* MAIN CONTAINER */}
       <main className="max-w-7xl mx-auto px-4 mt-6 space-y-6">
+        
+        {/* ⭐ 20. Killer AI Impact Statistics Banner */}
+        <div className="glass-panel border border-brand-purple/20 bg-slate-900/40 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden shadow-2xl hover-glow">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-brand-purple/10 rounded-full blur-2xl" />
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="p-2 rounded-xl bg-brand-purple/15 border border-brand-purple/20 text-brand-purple">
+              <Sparkles size={16} className="animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-slate-100 font-mono uppercase tracking-wider">Today's Autonomous AI Impact</h3>
+              <p className="text-[10px] text-zinc-500 font-mono">Real-time business coordination stats</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-6 text-xs font-mono relative z-10">
+            <div className="flex items-center gap-2 border-r border-white/5 pr-4">
+              <span className="text-zinc-500">Workflows:</span>
+              <strong className="text-brand-cyan font-bold">6 Executed</strong>
+            </div>
+            <div className="flex items-center gap-2 border-r border-white/5 pr-4">
+              <span className="text-zinc-500">Documents:</span>
+              <strong className="text-brand-purple font-bold">18 Indexed</strong>
+            </div>
+            <div className="flex items-center gap-2 border-r border-white/5 pr-4">
+              <span className="text-zinc-500">Meetings:</span>
+              <strong className="text-blue-400 font-bold">4 Scheduled</strong>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-500">Time Saved:</span>
+              <strong className="text-emerald-400 font-bold animate-pulse flex items-center gap-1">⚡ 6h 42m</strong>
+            </div>
+          </div>
+        </div>
         
         {/* METRICS DASHBOARD GRID WITH PITCH GLOW STATES */}
         <motion.section 
@@ -2517,7 +2658,7 @@ export default function App() {
             <div className="flex justify-between items-center border-b border-white/5 pb-2 mb-2">
               <div className="flex items-center gap-2 text-brand-purple font-bold">
                 <Presentation size={14} />
-                <span>Hackathon Presentation Assistant</span>
+                <span>Nexus Assistant</span>
               </div>
               <button
                 onClick={() => setShowPresenter(false)}
@@ -2584,12 +2725,12 @@ export default function App() {
           <button
             onClick={() => {
               setShowPresenter(true);
-              setPresenterHighlightText("Tip: Click 'Run' next to any demo scenario in this panel to trigger the workflow. Watch the timeline animate and the highlighted metric cards glow when completed!");
+              setPresenterHighlightText("Need help? Ask Nexus AI anything.");
             }}
             className="fixed bottom-4 right-4 p-3 rounded-full bg-gradient-to-r from-brand-purple to-brand-blue text-white shadow-xl hover:scale-105 transition-all z-50 cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
           >
             <Presentation size={14} />
-            <span>Show Presenter Assistant</span>
+            <span>Show Nexus Assistant</span>
           </button>
         )}
       </AnimatePresence>

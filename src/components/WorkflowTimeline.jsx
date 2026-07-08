@@ -84,20 +84,19 @@ export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isR
 
         {/* Step List Container */}
         <div className="relative pl-6 space-y-4 py-2">
-          {/* Vertical linking line */}
-          <div className="absolute left-2.5 top-5 bottom-5 w-[2px] bg-slate-800" />
-
-          {/* Animated progress overlay line */}
-          {steps.length > 1 && (
-            <motion.div
-              className="absolute left-2.5 top-5 w-[2px] bg-gradient-to-b from-brand-cyan via-brand-purple to-purple-800"
-              initial={{ height: 0 }}
-              animate={{
-                height: `${Math.max(0, (activeStepIndex / (steps.length - 1)) * 90)}%`
-              }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-            />
-          )}
+          {/* Vertical linking line with nested progress path to prevent overflow */}
+          <div className="absolute left-2.5 top-5 bottom-5 w-[2px] bg-slate-800 overflow-hidden">
+            {steps.length > 1 && (
+              <motion.div
+                className="w-full bg-gradient-to-b from-brand-cyan via-brand-purple to-purple-800"
+                initial={{ height: 0 }}
+                animate={{
+                  height: `${Math.min(1, Math.max(0, activeStepIndex / (steps.length - 1))) * 100}%`
+                }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+              />
+            )}
+          </div>
 
           {steps.map((step, idx) => {
             const isCompleted = idx < activeStepIndex;

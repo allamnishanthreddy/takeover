@@ -1,9 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, History, Filter, FileText, CheckCircle2, User, Calendar, MessageSquare, ArrowLeft } from 'lucide-react';
 
 export default function TimeMachine({ isOpen, onClose, stats = {}, activities = [], chatHistory = [], meetings = [], documents = {}, onReopenItem }) {
   const [filterType, setFilterType] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
+  const [isScanning, setIsScanning] = useState(true);
+  const [scanStatus, setScanStatus] = useState('Searching Business Memory...');
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsScanning(true);
+      setScanStatus('Searching Business Memory...');
+      
+      const t1 = setTimeout(() => {
+        setScanStatus('18 workspace nodes found...');
+      }, 500);
+      
+      const t2 = setTimeout(() => {
+        setScanStatus('Reconstructing ledger logs...');
+      }, 1000);
+      
+      const t3 = setTimeout(() => {
+        setIsScanning(false);
+      }, 1500);
+      
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -141,6 +168,29 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
 
   // Sort by date text placeholder (newest first)
   const sortedItems = [...filteredItems].sort((a, b) => b.id.localeCompare(a.id));
+
+  if (isScanning) {
+    return (
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div className="glass-panel w-full max-w-md rounded-3xl border border-brand-purple/20 shadow-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden">
+          {/* Neon scan sweep line */}
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-purple/5 to-transparent h-1/2 w-full animate-pulse border-b border-brand-purple/10" />
+          
+          <div className="relative mb-6">
+            <History size={48} className="text-brand-purple animate-spin" style={{ animationDuration: '3s' }} />
+            <div className="absolute inset-0 rounded-full border border-brand-cyan/30 animate-ping" />
+          </div>
+          
+          <h3 className="text-sm font-bold text-slate-100 font-mono tracking-widest uppercase mb-1">
+            Accessing Time Machine
+          </h3>
+          <p className="text-xs text-brand-cyan font-mono tracking-wider animate-pulse uppercase mt-2">
+            {scanStatus}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">

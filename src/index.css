@@ -221,3 +221,33 @@ button:active {
 .animate-envelope-fly {
   animation: fly-away 1.5s infinite ease-in-out;
 }
+
+/* Premium Hover Glow effects (⭐ 18. Premium Cursor/Hover) */
+.glass-panel, button, a {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(168, 85, 247, 0.12), 0 0 1px 1px rgba(255, 255, 255, 0.08);
+  border-color: rgba(168, 85, 247, 0.25) !important;
+}
+
+/* Pulsing neon dots for Live updates */
+@keyframes neon-pulse-green {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+    opacity: 0.7;
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.9);
+    opacity: 1;
+  }
+}
+.live-pulse-green {
+  animation: neon-pulse-green 1.8s infinite ease-in-out;
+}
