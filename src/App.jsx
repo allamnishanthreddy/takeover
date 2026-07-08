@@ -746,6 +746,7 @@ export default function App() {
     // Filter Documents
     Object.keys(documents).forEach(key => {
       const doc = documents[key];
+      if (!doc) return;
       const docTitle = doc.title || doc.invoiceNo || doc.quoteNo || doc.name || key;
       if (docTitle.toLowerCase().includes(query) || key.toLowerCase().includes(query)) {
         results.push({
@@ -875,16 +876,52 @@ export default function App() {
         }
       }, 650);
     } else if (action.type === 'intern') {
-      setActiveDocKey('offer_letter');
-      setChatHistory((prev) => [
-        ...prev,
-        {
-          sender: 'ai',
-          text: "Opening Alex Rivera's Frontend Engineering Intern offer contract for review in the Document Panel.",
-          timestamp: 'Just now',
-          agent: 'hr'
+      const steps = [
+        { title: 'CEO Agent scans employee contract database', agent: 'ceo', description: 'Querying records database for "Alex Rivera"...' },
+        { title: 'HR Agent retrieves document profile', agent: 'hr', description: 'Loading signed offer letter contract...' }
+      ];
+      setWorkflowReasoning({
+        title: "Intern Contract Retrieval Rationale",
+        rationale: "Retrieved previous onboarding contract for Alex Rivera ($2,500/mo, Remote) from secure storage in Business Memory. Loading copy in Document Panel."
+      });
+      setWorkflow({
+        isRunning: true,
+        steps,
+        activeStepIndex: 0,
+        statusText: 'CEO Agent searching database...',
+        command: 'Review Alex'
+      });
+      setActiveAgents(['ceo']);
+
+      let currentStep = 0;
+      const interval = setInterval(() => {
+        currentStep++;
+        if (currentStep < steps.length) {
+          setWorkflow((prev) => ({
+            ...prev,
+            activeStepIndex: currentStep,
+            statusText: `${steps[currentStep].agent.toUpperCase()} Agent: ${steps[currentStep].description}`
+          }));
+          setActiveAgents([steps[currentStep].agent]);
+        } else {
+          clearInterval(interval);
+          setActiveDocKey('offer_letter');
+          
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              sender: 'ai',
+              text: "I've retrieved Alex Rivera's Frontend Engineering Intern offer contract from your general ledger records. It is now loaded for review in the Document Panel.",
+              timestamp: 'Just now',
+              agent: 'hr'
+            }
+          ]);
+          
+          setPresenterHighlightText("✅ Memory resolved: Retrieved Alex Rivera's Frontend Intern contract from secure Business Memory.");
+          setWorkflow((prev) => ({ ...prev, activeStepIndex: steps.length, isRunning: false, statusText: '' }));
+          setActiveAgents([]);
         }
-      ]);
+      }, 650);
     } else if (action.type === 'meeting') {
       const steps = [
         { title: 'CEO Agent searches calendar database', agent: 'ceo', description: 'Checking Vanguard huddle details...' },
