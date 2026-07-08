@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, Award, Activity, DollarSign, Sparkles } from 'lucide-react';
+import { TrendingUp, Activity, DollarSign, Sparkles } from 'lucide-react';
 
-const REVENUE_DATA = [
+const BASE_REVENUE_DATA = [
   { name: 'Jan', revenue: 45000, expenses: 15000 },
   { name: 'Feb', revenue: 52000, expenses: 16000 },
   { name: 'Mar', revenue: 61000, expenses: 18000 },
@@ -10,14 +10,6 @@ const REVENUE_DATA = [
   { name: 'May', revenue: 73000, expenses: 22000 },
   { name: 'Jun', revenue: 85000, expenses: 25000 },
   { name: 'Jul', revenue: 99000, expenses: 28000 }
-];
-
-const SALES_DATA = [
-  { name: 'Mon', target: 5, actual: 4 },
-  { name: 'Tue', target: 5, actual: 6 },
-  { name: 'Wed', target: 5, actual: 8 },
-  { name: 'Thu', target: 5, actual: 5 },
-  { name: 'Fri', target: 5, actual: 9 }
 ];
 
 const PRODUCTIVITY_DATA = [
@@ -28,19 +20,51 @@ const PRODUCTIVITY_DATA = [
   { hour: '17:00', tasksComplete: 12, utility: 94 }
 ];
 
+const CHART_TOOLTIP_STYLE = {
+  backgroundColor: '#0f172a',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '8px',
+  color: '#fff',
+  fontSize: '11px'
+};
+
 export default function AnalyticsPanel({ stats = {} }) {
   const [activeTab, setActiveTab] = useState('revenue');
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // Let's dynamically inject updated values from stats props to the last items
-  const dynamicRevenueData = [...REVENUE_DATA];
-  if (stats.revenueVal) {
-    // If stats has updated revenue (e.g. $642,800), we can map/adjust the July revenue index
-    dynamicRevenueData[REVENUE_DATA.length - 1] = {
-      ...dynamicRevenueData[REVENUE_DATA.length - 1],
-      revenue: stats.revenueVal
-    };
-  }
+  // Dynamically inject live revenue into the most recent bar
+  const dynamicRevenueData = BASE_REVENUE_DATA.map((d, idx) => {
+    if (idx === BASE_REVENUE_DATA.length - 1 && stats.revenue) {
+      return { ...d, revenue: Math.min(stats.revenue / 10, 150000) };
+    }
+    return d;
+  });
+
+  // Sales data that reflects actual deals closed
+  const salesDeals = stats.salesCount || 38;
+  const SALES_DATA = [
+    { name: 'Mon', target: 8, actual: Math.max(3, Math.floor(salesDeals * 0.18)) },
+    { name: 'Tue', target: 8, actual: Math.max(4, Math.floor(salesDeals * 0.22)) },
+    { name: 'Wed', target: 8, actual: Math.max(6, Math.floor(salesDeals * 0.28)) },
+    { name: 'Thu', target: 8, actual: Math.max(5, Math.floor(salesDeals * 0.16)) },
+    { name: 'Fri', target: 8, actual: Math.max(7, Math.floor(salesDeals * 0.16)) }
+  ];
+
+  const revenueFormatted = stats.revenue
+    ? `$${(stats.revenue / 1000).toFixed(0)}K`
+    : '$1,850K';
+
+  const tabs = [
+    { id: 'revenue', label: 'Revenue Growth', icon: DollarSign, change: revenueFormatted },
+    { id: 'sales', label: 'Sales Deals', icon: TrendingUp, change: `${salesDeals} Closed` },
+    { id: 'productivity', label: 'Agent Utility', icon: Activity, change: `${stats.successRate || 98.4}%` }
+  ];
+
+  const insightText = {
+    revenue: `Revenue at ${revenueFormatted} — up 18.4% this month. ${stats.workflowsCount || 6} agent workflows completed today. CEO Agent recommends targeted developer upsells to maximize SLA expansions.`,
+    sales: `Sales team closed ${salesDeals} deals this period, beating target by ${Math.max(0, Math.round((salesDeals / 30 - 1) * 100))}%. Repeat clients contributed 45% of total contract value.`,
+    productivity: `Agent utility at ${stats.successRate || 98.4}%. CEO Agent routed ${(stats.workflowsCount || 6) * 25}+ tasks. Finance Agent automated ${stats.documentsCount || 18} document operations with zero errors.`
+  };
 
   const renderActiveChart = () => {
     switch (activeTab) {
@@ -61,15 +85,7 @@ export default function AnalyticsPanel({ stats = {} }) {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
               <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
               <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#0f172a',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  fontSize: '11px'
-                }}
-              />
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
               <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
               <Area type="monotone" name="Gross Revenue ($)" dataKey="revenue" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
               <Area type="monotone" name="Corporate Expenses ($)" dataKey="expenses" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorExpenses)" />
@@ -81,29 +97,19 @@ export default function AnalyticsPanel({ stats = {} }) {
         return (
           <ResponsiveContainer width="100%" height={230}>
             <BarChart data={SALES_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#06b6d4" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
               <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
               <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#0f172a',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  fontSize: '11px'
-                }}
-              />
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
               <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
-              <Bar name="Sales Target Deals" dataKey="target" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" strokeWidth={1} radius={[4, 4, 0, 0]} />
-              <Bar name="Actual Contracts Closed" dataKey="actual" fill="url(#salesGrad)" radius={[4, 4, 0, 0]}>
-                {/* SVG gradient definition */}
-                <defs>
-                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="100%" stopColor="#3b82f6" />
-                  </linearGradient>
-                </defs>
-              </Bar>
+              <Bar name="Weekly Target" dataKey="target" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.15)" strokeWidth={1} radius={[4, 4, 0, 0]} />
+              <Bar name="Actual Contracts Closed" dataKey="actual" fill="url(#salesGrad)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -115,18 +121,10 @@ export default function AnalyticsPanel({ stats = {} }) {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
               <XAxis dataKey="hour" stroke="#64748b" fontSize={10} tickLine={false} />
               <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#0f172a',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  fontSize: '11px'
-                }}
-              />
+              <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
               <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
-              <Line type="monotone" name="Agent Workspace Utility %" dataKey="utility" stroke="#a855f7" strokeWidth={2} activeDot={{ r: 6 }} />
-              <Line type="monotone" name="System Tasks Complete" dataKey="tasksComplete" stroke="#06b6d4" strokeWidth={2} />
+              <Line type="monotone" name="Agent Workspace Utility %" dataKey="utility" stroke="#a855f7" strokeWidth={2} activeDot={{ r: 6 }} dot={false} />
+              <Line type="monotone" name="System Tasks Complete" dataKey="tasksComplete" stroke="#06b6d4" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -135,12 +133,6 @@ export default function AnalyticsPanel({ stats = {} }) {
         return null;
     }
   };
-
-  const tabs = [
-    { id: 'revenue', label: 'Revenue Growth', icon: DollarSign, change: '+14.2%' },
-    { id: 'sales', label: 'Sales Deals', icon: TrendingUp, change: '18 Deals' },
-    { id: 'productivity', label: 'Agent Productivity', icon: Activity, change: '96.2%' }
-  ];
 
   return (
     <div className="glass-panel p-6 rounded-2xl border border-white/5 h-full flex flex-col justify-between">
@@ -155,7 +147,7 @@ export default function AnalyticsPanel({ stats = {} }) {
               Live Data
             </span>
           </h3>
-          <p className="text-xs text-zinc-400 mt-0.5">Real-time system telemetry and agent logs.</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Real-time system telemetry and agent performance logs.</p>
         </div>
 
         {/* Tab switchers */}
@@ -187,7 +179,7 @@ export default function AnalyticsPanel({ stats = {} }) {
         <div>
           <span className="text-[9px] uppercase font-mono tracking-wider text-brand-cyan block font-bold">Today's Autonomous Insight</span>
           <p className="text-[11px] text-zinc-300 mt-0.5 leading-relaxed">
-            Revenue grew 18.4% today because repeat annual licensing contracts contributed 75% of net profit. CEO Agent recommends targeted developer upsells to maximize current SLA expansions.
+            {insightText[activeTab]}
           </p>
         </div>
       </div>
@@ -218,6 +210,9 @@ export default function AnalyticsPanel({ stats = {} }) {
                     <strong className="text-xs text-white font-mono">{tab.change}</strong>
                   </div>
                 </div>
+                {isSelected && (
+                  <span className="w-1.5 h-1.5 bg-brand-cyan rounded-full live-pulse-green flex-shrink-0" />
+                )}
               </div>
             );
           })}
@@ -229,9 +224,11 @@ export default function AnalyticsPanel({ stats = {} }) {
         </div>
       </div>
 
-      {/* Explanation console toggler */}
+      {/* Footer: Telemetry summary + explanation toggle */}
       <div className="mt-4 flex justify-between items-center border-t border-white/5 pt-3">
-        <span className="text-[10px] text-zinc-500 font-mono">Telemetry Data: Verified Correct</span>
+        <span className="text-[10px] text-zinc-500 font-mono">
+          {stats.workflowsCount || 6} workflows · {stats.documentsCount || 18} docs · {stats.meetingsCount || 4} meetings · {stats.timeSavedMinutes || 402}m saved
+        </span>
         <button
           onClick={() => setShowExplanation(!showExplanation)}
           className="px-3 py-1.5 rounded-lg border border-brand-cyan/35 hover:border-brand-cyan/70 text-brand-cyan text-[11px] font-bold cursor-pointer hover:bg-brand-cyan/10 transition-all flex items-center gap-1.5"
@@ -247,9 +244,9 @@ export default function AnalyticsPanel({ stats = {} }) {
             <span>AI Telemetry Explanation Console</span>
           </div>
           <p>
-            {activeTab === 'revenue' && "Gross Revenue has grown by 14.2% month-on-month, primarily driven by the acquisition of 5 new Enterprise SaaS contracts in July. Expenses were minimized to $28,000, representing a healthy 71% net profit margin."}
-            {activeTab === 'sales' && "Sales team closed 18 deals this month, beating target by 28%. South Region led with +18% contract value increases, North Region saw +5%, while returning clients contributed an additional +12% repeat volume."}
-            {activeTab === 'productivity' && "Autonomous Agent utility peaked at 96.2%. CEO Agent successfully routed 150 tasks with 0 latency. Finance Agent automated 45 reconciliations, while HR Agent completed 12 employee reviews."}
+            {activeTab === 'revenue' && `Gross Revenue at ${revenueFormatted} — up 18.4% month-on-month, driven by Enterprise SaaS contracts and repeat licensing renewals. Operating expenses held at $28K, yielding a 71% net profit margin.`}
+            {activeTab === 'sales' && `Sales team closed ${salesDeals} deals this period, beating targets by ${Math.max(0, Math.round((salesDeals / 30 - 1) * 100))}%. South Region led with +18% contract value. Returning clients contributed 45% repeat volume.`}
+            {activeTab === 'productivity' && `Autonomous Agent utility at ${stats.successRate || 98.4}%. CEO Agent routed ${(stats.workflowsCount || 6) * 25}+ tasks with zero latency. Finance Agent automated ${stats.documentsCount || 18} document operations. Knowledge Agent indexed all policy queries instantly.`}
           </p>
         </div>
       )}

@@ -164,9 +164,16 @@ export default function AgentGrid({ activeAgents = [], pendingMemoryAction = nul
             {isActive && (
               <div className="mt-3 text-[10px] font-mono text-brand-cyan/90 bg-brand-cyan/5 border border-brand-cyan/20 rounded p-1.5 flex items-center gap-1 animate-pulse">
                 <AlertCircle size={10} />
-                Analyzing execution tree...
+                {{
+                  ceo: 'Orchestrating agent chain...',
+                  hr: 'Processing candidate data...',
+                  finance: 'Compiling financial records...',
+                  sales: 'Syncing CRM pipeline...',
+                  knowledge: 'Querying knowledge base...'
+                }[agent.id] || 'Processing task...'}
               </div>
             )}
+
           </motion.div>
         );
       })}

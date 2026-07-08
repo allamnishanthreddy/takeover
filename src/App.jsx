@@ -247,7 +247,11 @@ export default function App() {
       pendingTasks: 5,
       meetingsToday: 2,
       activeWorkflows: 0,
-      successRate: 98.4
+      successRate: 98.4,
+      workflowsCount: 6,
+      documentsCount: 18,
+      meetingsCount: 4,
+      timeSavedMinutes: 402
     };
   });
 
