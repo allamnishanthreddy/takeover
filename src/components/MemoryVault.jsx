@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Database, ShieldCheck, Users, Briefcase, FileCheck, Sliders } from 'lucide-react';
+import { useState } from 'react';
+import { Database, ShieldCheck, Users, Briefcase, Sliders } from 'lucide-react';
 
-export default function MemoryVault({ stats = {}, meetings = [], documents = {}, activities = [], employees = [], onAddEmployee, onEditEmployee, onExportEmployees }) {
+export default function MemoryVault({ stats = {}, meetings = [], documents = {}, activities = [], employees = [], memoriesCount = 0, onAddEmployee, onEditEmployee, onExportEmployees, onOpenMarketplace }) {
   const [activeTab, setActiveTab] = useState('directory');
 
   // Derive CRM client list dynamically from state
@@ -23,6 +23,14 @@ export default function MemoryVault({ stats = {}, meetings = [], documents = {},
                   <Briefcase size={10} className="text-brand-purple" /> Employees Directory ({employees.length})
                 </span>
                 <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={onOpenMarketplace}
+                    className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/20 text-brand-cyan text-[8px] font-mono cursor-pointer transition-all active:scale-95"
+                    title="Browse the AI Talent Marketplace"
+                  >
+                    ◆ Hire Talent
+                  </button>
                   <button
                     type="button"
                     onClick={onExportEmployees}
@@ -114,11 +122,12 @@ export default function MemoryVault({ stats = {}, meetings = [], documents = {},
         );
 
       case 'history': {
+        // Real counts only — every number here is derived from live state
         const employeeCount = employees.length;
-        const docCount = Object.keys(documents).filter(k => documents[k] !== null).length + 318;
-        const invoiceCount = (documents.invoice ? 1 : 0) + 90;
-        const reportCount = (documents.monthly_report ? 1 : 0) + 23;
-        const commandCount = activities.filter(a => a.category === 'user').length + 514;
+        const docCount = Object.keys(documents).filter(k => documents[k] !== null).length;
+        const invoiceCount = documents.invoice ? 1 : 0;
+        const reportCount = documents.monthly_report ? 1 : 0;
+        const commandCount = activities.filter(a => a.category === 'user').length;
 
         return (
           <div className="space-y-3">
@@ -130,7 +139,7 @@ export default function MemoryVault({ stats = {}, meetings = [], documents = {},
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-slate-950/60 p-2 rounded-xl border border-white/5 flex flex-col justify-between min-h-[60px] hover:border-brand-purple/20 transition-all">
                 <span className="text-zinc-500 text-[8px] font-mono uppercase tracking-wider block">Employees</span>
-                <strong className="text-brand-purple text-xs font-mono mt-1">{employeeCount + 39}</strong>
+                <strong className="text-brand-purple text-xs font-mono mt-1">{employeeCount}</strong>
               </div>
               <div className="bg-slate-950/60 p-2 rounded-xl border border-white/5 flex flex-col justify-between min-h-[60px] hover:border-brand-cyan/20 transition-all">
                 <span className="text-zinc-500 text-[8px] font-mono uppercase tracking-wider block">Documents</span>
@@ -149,8 +158,8 @@ export default function MemoryVault({ stats = {}, meetings = [], documents = {},
                 <strong className="text-pink-500 text-xs font-mono mt-1">{commandCount}</strong>
               </div>
               <div className="bg-slate-950/60 p-2 rounded-xl border border-white/5 flex flex-col justify-between min-h-[60px] hover:border-brand-purple/20 transition-all">
-                <span className="text-zinc-500 text-[8px] font-mono uppercase tracking-wider block">Precision</span>
-                <strong className="text-brand-purple text-xs font-mono mt-1">100%</strong>
+                <span className="text-zinc-500 text-[8px] font-mono uppercase tracking-wider block">Decisions</span>
+                <strong className="text-brand-purple text-xs font-mono mt-1">◆ {memoriesCount}</strong>
               </div>
             </div>
 
@@ -193,7 +202,7 @@ export default function MemoryVault({ stats = {}, meetings = [], documents = {},
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
           <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
-            <Database size={16} className="text-brand-purple animate-pulse" />
+            <Database size={16} className="text-brand-purple" />
             Business Memory Vault
           </h3>
           <span className="text-[10px] font-mono bg-slate-950 px-2 py-0.5 rounded border border-white/5 text-zinc-400">

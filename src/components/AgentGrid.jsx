@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Briefcase, Users, DollarSign, TrendingUp, BookOpen, AlertCircle } from 'lucide-react';
 
@@ -50,7 +49,7 @@ const AGENTS = [
   }
 ];
 
-export default function AgentGrid({ activeAgents = [], pendingMemoryAction = null }) {
+export default function AgentGrid({ activeAgents = [], pendingMemoryAction = null, compact = false }) {
   const getAgentStatus = (agentId, isActive) => {
     // Intercept if Sales Agent is awaiting human confirmation/approval
     if (agentId === 'sales' && pendingMemoryAction) {
@@ -94,6 +93,26 @@ export default function AgentGrid({ activeAgents = [], pendingMemoryAction = nul
       }
     }
   };
+
+  // Compact roster line: same agents, same status logic, one quiet row
+  if (compact) {
+    return (
+      <div className="glass-panel rounded-2xl border border-white/5 px-5 py-2.5 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Agents</span>
+        {AGENTS.map((agent) => {
+          const isActive = activeAgents.includes(agent.id);
+          const statusInfo = getAgentStatus(agent.id, isActive);
+          return (
+            <div key={agent.id} className="flex items-center gap-1.5" title={`${agent.name} — ${agent.role}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.color}`} />
+              <span className={`text-xs ${isActive ? 'text-white font-semibold' : 'text-zinc-400'}`}>{agent.name}</span>
+              <span className={`text-[9px] font-mono uppercase ${statusInfo.textClass}`}>{statusInfo.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

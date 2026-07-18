@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, History, Filter, FileText, CheckCircle2, User, Calendar, MessageSquare, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { History, Filter, FileText, CheckCircle2, User, Calendar, MessageSquare, ArrowLeft } from 'lucide-react';
 
-export default function TimeMachine({ isOpen, onClose, stats = {}, activities = [], chatHistory = [], meetings = [], documents = {}, onReopenItem }) {
+export default function TimeMachine({ isOpen, onClose, stats = {}, activities = [], chatHistory = [], meetings = [], documents = {}, memories = [], onReopenItem }) {
   const [filterType, setFilterType] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
   const [isScanning, setIsScanning] = useState(true);
@@ -13,16 +13,16 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
       setScanStatus('Searching Business Memory...');
       
       const t1 = setTimeout(() => {
-        setScanStatus('18 workspace nodes found...');
-      }, 500);
-      
+        setScanStatus('Indexing decision ledger...');
+      }, 400);
+
       const t2 = setTimeout(() => {
-        setScanStatus('Reconstructing ledger logs...');
-      }, 1000);
-      
+        setScanStatus('Reconstructing operation logs...');
+      }, 800);
+
       const t3 = setTimeout(() => {
         setIsScanning(false);
-      }, 1500);
+      }, 1100);
       
       return () => {
         clearTimeout(t1);
@@ -36,6 +36,22 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
 
   // Compile a comprehensive database array derived from our actual state logs
   const historyItems = [];
+
+  // 0. Real Decision Ledger entries — the '~' id prefix sorts them first in the
+  // descending localeCompare below, keeping remembered decisions on top
+  memories.forEach((m) => {
+    historyItems.push({
+      id: `~dec-${m.timestamp}`,
+      type: 'decision',
+      title: m.title,
+      subtitle: `Why: ${m.why}`,
+      dateText: new Date(m.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }),
+      rawItem: m.raw || m,
+      targetKey: m.targetKey,
+      icon: CheckCircle2,
+      color: 'text-brand-purple bg-brand-purple/10 border-brand-purple/20'
+    });
+  });
 
   // 1. Map Employees (Hires)
   const baseHires = [
@@ -149,19 +165,19 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
     });
   });
 
-  // Filter Items dynamically
+  // Filter Items dynamically (real ledger dates match via today's short label)
+  const todayLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const filteredItems = historyItems.filter(item => {
     if (filterType !== 'all' && item.type !== filterType) return false;
-    
-    // Simplistic date matching
+
     if (filterDate === 'today') {
-      return item.dateText.includes('July 6') || item.dateText.includes('Today');
+      return item.dateText.includes('July 6') || item.dateText.includes('Today') || item.dateText.includes(todayLabel);
     }
     if (filterDate === 'week') {
-      return item.dateText.includes('July') || item.dateText.includes('Tomorrow');
+      return item.dateText.includes('Jul') || item.dateText.includes('Tomorrow');
     }
     if (filterDate === 'month') {
-      return item.dateText.includes('June') || item.dateText.includes('July');
+      return item.dateText.includes('Jun') || item.dateText.includes('Jul');
     }
     return true;
   });
@@ -180,9 +196,9 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
             <History size={48} className="text-brand-purple animate-spin" style={{ animationDuration: '3s' }} />
             <div className="absolute inset-0 rounded-full border border-brand-cyan/30 animate-ping" />
           </div>
-          
+
           <h3 className="text-sm font-bold text-slate-100 font-mono tracking-widest uppercase mb-1">
-            Accessing Time Machine
+            Accessing Business Memory
           </h3>
           <p className="text-xs text-brand-cyan font-mono tracking-wider animate-pulse uppercase mt-2">
             {scanStatus}
@@ -207,8 +223,8 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
                 <History size={18} className="animate-spin" style={{ animationDuration: '6s' }} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-100 uppercase tracking-wide">Business Time Machine</h3>
-                <p className="text-[10px] text-zinc-500 font-mono">Filter and reopen historical operations and documents</p>
+                <h3 className="text-base font-bold text-slate-100 uppercase tracking-wide">Business Memory</h3>
+                <p className="text-[10px] text-zinc-500 font-mono">Every remembered decision, operation and document — filter and reopen</p>
               </div>
             </div>
             <button
@@ -225,7 +241,7 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
               <span className="text-zinc-500 font-mono text-[9px] uppercase tracking-wider flex items-center gap-1">
                 <Filter size={10} /> Category:
               </span>
-              {['all', 'hire', 'financial', 'meeting', 'report', 'workflow', 'conversation'].map((type) => (
+              {['all', 'decision', 'hire', 'financial', 'meeting', 'report', 'workflow', 'conversation'].map((type) => (
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
@@ -266,7 +282,7 @@ export default function TimeMachine({ isOpen, onClose, stats = {}, activities = 
               <p className="text-[10px] text-zinc-600 mt-0.5">Adjust filter parameter chips above to browse logs.</p>
             </div>
           ) : (
-            sortedItems.map((item, idx) => {
+            sortedItems.map((item) => {
               const IconComponent = item.icon;
               return (
                 <div key={item.id} className="relative group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950/60 border border-white/5 hover:border-brand-purple/20 transition-all hover:bg-slate-950/80">

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar as CalendarIcon, Clock, MapPin, User, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -61,7 +60,7 @@ export default function CalendarScheduler({ meetings = [], onAddMeeting }) {
                 
                 {/* Meeting Glow Bullet */}
                 {dateHasMeeting && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan mt-1.5 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan mt-1.5" />
                 )}
               </div>
             );

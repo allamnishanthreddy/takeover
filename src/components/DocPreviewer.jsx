@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FileText, Download, Copy, Check, FileSpreadsheet, Calendar, TrendingUp, Sparkles } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -28,7 +28,7 @@ export default function DocPreviewer({ activeDoc, documents = {}, onSelectDoc, o
     const currentDoc = documents[activeDoc];
     if (!currentDoc) return;
     
-    let csvContent = "";
+    let csvContent;
     if (activeDoc === 'invoice') {
       csvContent = "Item Description,Qty,Rate,Total\n" + 
         (currentDoc.items || []).map(item => `"${item.desc}",${item.qty},${item.rate},${item.total}`).join("\n") +
@@ -196,7 +196,7 @@ export default function DocPreviewer({ activeDoc, documents = {}, onSelectDoc, o
       return (
         <div className="flex flex-col items-center justify-center h-80 text-center p-6 border border-white/5 border-dashed rounded-xl bg-slate-950/20 font-sans">
           <div className="w-12 h-12 rounded-full bg-slate-900 border border-white/5 flex items-center justify-center mb-4">
-            <Sparkles size={20} className="text-brand-purple animate-pulse" />
+            <Sparkles size={20} className="text-brand-purple" />
           </div>
           <strong className="text-slate-200 text-xs font-semibold uppercase tracking-wider block font-mono">{details.title}</strong>
           <p className="text-[11px] text-zinc-500 mt-2 max-w-[280px] leading-relaxed">{details.description}</p>

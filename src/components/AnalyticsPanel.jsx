@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, Legend } from 'recharts';
 import { TrendingUp, Activity, DollarSign, Sparkles } from 'lucide-react';
 
@@ -74,12 +74,12 @@ export default function AnalyticsPanel({ stats = {} }) {
             <AreaChart data={dynamicRevenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#d9a054" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#d9a054" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#7a7f87" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#7a7f87" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -87,8 +87,8 @@ export default function AnalyticsPanel({ stats = {} }) {
               <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
               <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
               <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
-              <Area type="monotone" name="Gross Revenue ($)" dataKey="revenue" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
-              <Area type="monotone" name="Corporate Expenses ($)" dataKey="expenses" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorExpenses)" />
+              <Area type="monotone" name="Gross Revenue ($)" dataKey="revenue" stroke="#d9a054" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+              <Area type="monotone" name="Corporate Expenses ($)" dataKey="expenses" stroke="#7a7f87" strokeWidth={2} fillOpacity={1} fill="url(#colorExpenses)" />
             </AreaChart>
           </ResponsiveContainer>
         );
@@ -99,8 +99,8 @@ export default function AnalyticsPanel({ stats = {} }) {
             <BarChart data={SALES_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#3b82f6" />
+                  <stop offset="0%" stopColor="#d9a054" />
+                  <stop offset="100%" stopColor="#a97c3f" />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
@@ -123,8 +123,8 @@ export default function AnalyticsPanel({ stats = {} }) {
               <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
               <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
               <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
-              <Line type="monotone" name="Agent Workspace Utility %" dataKey="utility" stroke="#a855f7" strokeWidth={2} activeDot={{ r: 6 }} dot={false} />
-              <Line type="monotone" name="System Tasks Complete" dataKey="tasksComplete" stroke="#06b6d4" strokeWidth={2} dot={false} />
+              <Line type="monotone" name="Agent Workspace Utility %" dataKey="utility" stroke="#7a7f87" strokeWidth={2} activeDot={{ r: 6 }} dot={false} />
+              <Line type="monotone" name="System Tasks Complete" dataKey="tasksComplete" stroke="#d9a054" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -174,7 +174,7 @@ export default function AnalyticsPanel({ stats = {} }) {
       {/* Today's Autonomous Insight Banner */}
       <div className="bg-brand-cyan/5 border border-brand-cyan/20 rounded-xl p-3 mb-4 flex items-start gap-2.5">
         <div className="p-1.5 bg-brand-cyan/15 text-brand-cyan rounded-lg flex-shrink-0 mt-0.5">
-          <Sparkles size={12} className="animate-pulse" />
+          <Sparkles size={12} />
         </div>
         <div>
           <span className="text-[9px] uppercase font-mono tracking-wider text-brand-cyan block font-bold">Today's Autonomous Insight</span>
@@ -240,7 +240,7 @@ export default function AnalyticsPanel({ stats = {} }) {
       {showExplanation && (
         <div className="mt-4 p-4 rounded-xl bg-slate-900/60 border border-white/5 text-[11px] text-zinc-300 space-y-2 animate-fade-in font-mono leading-relaxed">
           <div className="flex items-center gap-1.5 text-brand-cyan font-bold">
-            <TrendingUp size={12} className="animate-pulse" />
+            <TrendingUp size={12} />
             <span>AI Telemetry Explanation Console</span>
           </div>
           <p>

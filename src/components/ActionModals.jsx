@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, UserPlus, Calendar, Mail, Send, Check, AlertTriangle, Paperclip, DollarSign, TrendingUp, CheckCircle2, Activity, Briefcase, ArrowUpRight } from 'lucide-react';
 
 // 1. ADD/EDIT EMPLOYEE MODAL

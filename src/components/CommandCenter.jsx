@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Send, Terminal, Sparkles, User, ChevronRight, Mic, MicOff } from 'lucide-react';
 
 const DEMO_COMMANDS = [
@@ -29,7 +29,7 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
       setPlaceholderIdx((prev) => (prev + 1) % PLACEHOLDERS.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [PLACEHOLDERS.length]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -94,8 +94,8 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
   return (
     <div className="glass-panel p-6 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[460px] h-[520px]">
       {/* Decorative gradient light */}
-      <div className="absolute -top-12 -right-12 w-32 h-32 bg-brand-purple/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-brand-cyan/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-brand-purple/20 rounded-full blur-3xl" />
+      <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-brand-cyan/20 rounded-full blur-3xl" />
 
       <div>
         {/* Header Info */}
@@ -116,7 +116,7 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
           {chatHistory.length === 0 && !isTyping ? (
             <div className="h-full flex flex-col items-center justify-center text-center text-zinc-500 py-4">
               <div className="w-10 h-10 rounded-full bg-slate-900 border border-white/5 flex items-center justify-center mb-3">
-                <Sparkles size={16} className="text-brand-purple animate-spin-slow" />
+                <Sparkles size={16} className="text-brand-purple" />
               </div>
               <p className="text-xs font-semibold text-zinc-400">Ask Nexus AI</p>
               <p className="text-[11px] text-zinc-500 mt-1 max-w-[280px] leading-relaxed">
@@ -240,6 +240,7 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
           <div className="relative flex items-center">
             <input
               type="text"
+              data-command-input
               value={command}
               onChange={(e) => setCommand(e.target.value)}
               disabled={isRunning}
@@ -270,7 +271,7 @@ export default function CommandCenter({ onExecuteCommand, isRunning, chatHistory
         {/* Demo Suggestion Chips */}
         <div className="mt-4">
           <div className="flex items-center gap-1 text-[10px] text-zinc-400 mb-1.5 font-medium">
-            <Sparkles size={10} className="text-brand-purple animate-pulse" />
+            <Sparkles size={10} className="text-brand-purple" />
             <span>Interactive Demo Flows:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">

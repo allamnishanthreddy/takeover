@@ -1,29 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, Loader2, Play, Brain } from 'lucide-react';
 
-const TimeSavedCounter = () => {
-  const [minutes, setMinutes] = useState(0);
-  useEffect(() => {
-    let start = 0;
-    const interval = setInterval(() => {
-      start += 6;
-      if (start >= 134) {
-        setMinutes(134);
-        clearInterval(interval);
-      } else {
-        setMinutes(start);
-      }
-    }, 20);
-    return () => clearInterval(interval);
-  }, []);
-
-  const hrs = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return <span>{hrs}h {mins}m</span>;
-};
-
-export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isRunning = false, statusText = "", reasoning = null }) {
+export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isRunning = false, statusText = "", reasoning = null, committed = false }) {
   const [showReasoning, setShowReasoning] = useState(true);
   if (steps.length === 0) {
     return (
@@ -69,16 +48,12 @@ export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isR
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="mb-4 text-xs font-mono bg-emerald-950/20 text-emerald-400 border border-emerald-500/20 p-2.5 rounded-lg flex flex-col gap-1.5"
+            className="mb-4 text-xs font-mono bg-emerald-950/20 text-emerald-400 border border-emerald-500/20 p-2.5 rounded-lg flex items-center gap-2"
           >
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="text-emerald-400 flex-shrink-0" size={12} />
-              <span className="font-bold">Workflow Completed Successfully!</span>
-            </div>
-            <div className="text-[10px] text-zinc-400 border-t border-white/5 pt-1.5 flex justify-between items-center">
-              <span>Estimated Time Saved:</span>
-              <strong className="text-emerald-400 animate-pulse text-xs"><TimeSavedCounter /></strong>
-            </div>
+            <CheckCircle2 className="text-emerald-400 flex-shrink-0" size={12} />
+            <span className="font-bold">
+              {committed ? '◆ Committed to Business Memory' : 'Workflow Completed Successfully!'}
+            </span>
           </motion.div>
         )}
 
@@ -101,7 +76,6 @@ export default function WorkflowTimeline({ steps = [], activeStepIndex = -1, isR
           {steps.map((step, idx) => {
             const isCompleted = idx < activeStepIndex;
             const isActive = idx === activeStepIndex;
-            const isPending = idx > activeStepIndex;
 
             return (
               <motion.div
